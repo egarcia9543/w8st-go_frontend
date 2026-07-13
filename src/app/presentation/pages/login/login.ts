@@ -8,7 +8,6 @@ import { AuthFacade } from '../../facades/auth.facade';
   selector: 'app-login',
   imports: [HlmButton, TranslatePipe, LottieComponent],
   templateUrl: './login.html',
-  styleUrl: './login.scss',
 })
 export class Login {
   private readonly authFacade = inject(AuthFacade);
