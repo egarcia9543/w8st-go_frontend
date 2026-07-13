@@ -9,6 +9,8 @@ import { routes } from './app.routes';
 import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
 import { credentialsInterceptor } from './infrastructure/interceptors/credentials-interceptor';
 import { provideSpartanHlm } from '@spartan-ng/helm/utils';
+import { AuthRepository } from './domain/repositories/auth/auth.repository';
+import { AuthRepositoryImp } from './infrastructure/repositories/auth/auth.repository.imp';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -25,5 +27,6 @@ export const appConfig: ApplicationConfig = {
       lang: 'es',
     }),
     provideLottieOptions({ player: () => player }),
+    { provide: AuthRepository, useClass: AuthRepositoryImp },
   ],
 };

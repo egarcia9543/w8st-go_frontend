@@ -1,6 +1,7 @@
 {
   "login": {
-    "title": "Login",
-    "subtitle": "Please enter your credentials to access your account."
+    "title": "Welcome",
+    "subtitle": "Please log in to your account to continue.",
+    "loginWithGoogle": "Log in with Google"
   }
 }

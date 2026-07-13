@@ -4,5 +4,7 @@
   <h1 class="text-2xl font-bold text-foreground">{{ 'login.title' | translate }}</h1>
   <p class="mt-2 text-sm text-muted-foreground">{{ 'login.subtitle' | translate }}</p>
 
-  <button hlmBtn type="button" class="mt-6 w-full">Iniciar sesión con Google</button>
+  <button hlmBtn type="button" class="mt-6 w-full" (click)="loginWithGoogle()">
+    {{ 'login.loginWithGoogle' | translate }}
+  </button>
 </section>
