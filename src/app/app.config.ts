@@ -1,4 +1,9 @@
-import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
+import {
+  ApplicationConfig,
+  inject,
+  provideAppInitializer,
+  provideBrowserGlobalErrorListeners,
+} from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { provideTranslateService } from '@ngx-translate/core';
 import { provideTranslateHttpLoader } from '@ngx-translate/http-loader';
@@ -11,6 +16,7 @@ import { credentialsInterceptor } from './infrastructure/interceptors/credential
 import { provideSpartanHlm } from '@spartan-ng/helm/utils';
 import { AuthRepository } from './domain/repositories/auth/auth.repository';
 import { AuthRepositoryImp } from './infrastructure/repositories/auth/auth.repository.imp';
+import { AuthFacade } from './presentation/facades/auth.facade';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -27,6 +33,7 @@ export const appConfig: ApplicationConfig = {
       lang: 'es',
     }),
     provideLottieOptions({ player: () => player }),
+    provideAppInitializer(() => inject(AuthFacade).checkSession()),
     { provide: AuthRepository, useClass: AuthRepositoryImp },
   ],
 };
