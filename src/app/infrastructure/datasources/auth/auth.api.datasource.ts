@@ -11,4 +11,8 @@ export class AuthApiDatasource {
   checkSession(): Observable<UserDto> {
     return this.http.get<UserDto>(`${environment.apiUrl}/auth/me`);
   }
+
+  logout(): Observable<void> {
+    return this.http.post<void>(`${environment.apiUrl}/auth/logout`, {});
+  }
 }

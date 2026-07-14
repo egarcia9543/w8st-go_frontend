@@ -5,4 +5,7 @@
   <p class="mt-1 text-sm text-muted-foreground">
     {{ facade.sessionState().user?.userEmail }}
   </p>
+  <button hlmBtn variant="outline" type="button" class="mt-6 cursor-pointer" (click)="logout()">
+    {{ 'dashboard.logout' | translate }}
+  </button>
 </section>
