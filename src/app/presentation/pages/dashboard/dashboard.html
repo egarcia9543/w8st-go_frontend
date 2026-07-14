@@ -1,0 +1,8 @@
+<section class="p-8">
+  <h1 class="text-2xl font-bold text-foreground">
+    Hola, {{ facade.sessionState().user?.userName }}
+  </h1>
+  <p class="mt-1 text-sm text-muted-foreground">
+    {{ facade.sessionState().user?.userEmail }}
+  </p>
+</section>
