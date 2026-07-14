@@ -20,10 +20,13 @@ export class AuthRepositoryImp implements AuthRepository {
       map((user: UserDto) => {
         return UserMapper.toDomain(user);
       }),
-      catchError((error: HttpErrorResponse) => {
-        error.status === HttpStatusCode.Unauthorized ? of(null) : throwError(() => error);
-        return of(null);
-      }),
+      catchError((error: HttpErrorResponse) =>
+        error.status === HttpStatusCode.Unauthorized ? of(null) : throwError(() => error),
+      ),
     );
+  }
+
+  logout(): Observable<void> {
+    return this.authDatasource.logout();
   }
 }

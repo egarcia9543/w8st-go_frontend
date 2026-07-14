@@ -2,7 +2,8 @@ import { inject, Injectable, signal } from '@angular/core';
 import { LoginUseCase } from '../../application/use-cases/login/login.use-case';
 import { CheckSessionUseCase } from '../../application/use-cases/check-session/check-session.use-case';
 import { User } from '../../domain/entities/user.entity';
-import { Observable, tap } from 'rxjs';
+import { finalize, Observable, tap } from 'rxjs';
+import { LogoutUseCase } from '../../application/use-cases/logout/logout.use-case';
 
 export interface UserState {
   isAuthenticated: boolean;
@@ -13,6 +14,7 @@ export interface UserState {
 export class AuthFacade {
   private readonly loginUC = inject(LoginUseCase);
   private readonly checkSessionUC = inject(CheckSessionUseCase);
+  private readonly logoutUC = inject(LogoutUseCase);
 
   private readonly initialState: UserState = {
     isAuthenticated: false,
@@ -40,5 +42,13 @@ export class AuthFacade {
 
   clearSession(): void {
     this._sessionState.set({ ...this.initialState });
+  }
+
+  logout(): Observable<void> {
+    return this.logoutUC.execute().pipe(
+      finalize(() => {
+        this.clearSession();
+      }),
+    );
   }
 }
