@@ -37,4 +37,8 @@ export class AuthFacade {
       }),
     );
   }
+
+  clearSession(): void {
+    this._sessionState.set({ ...this.initialState });
+  }
 }

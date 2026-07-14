@@ -17,12 +17,13 @@ import { provideSpartanHlm } from '@spartan-ng/helm/utils';
 import { AuthRepository } from './domain/repositories/auth/auth.repository';
 import { AuthRepositoryImp } from './infrastructure/repositories/auth/auth.repository.imp';
 import { AuthFacade } from './presentation/facades/auth.facade';
+import { authInterceptor } from './presentation/interceptors/auth-interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes),
-    provideHttpClient(withFetch(), withInterceptors([credentialsInterceptor])),
+    provideHttpClient(withFetch(), withInterceptors([credentialsInterceptor, authInterceptor])),
     provideSpartanHlm(),
     provideTranslateService({
       loader: provideTranslateHttpLoader({
