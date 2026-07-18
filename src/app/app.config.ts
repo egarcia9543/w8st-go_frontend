@@ -18,6 +18,8 @@ import { AuthRepository } from './domain/repositories/auth/auth.repository';
 import { AuthRepositoryImp } from './infrastructure/repositories/auth/auth.repository.imp';
 import { AuthFacade } from './presentation/facades/auth.facade';
 import { authInterceptor } from './presentation/interceptors/auth-interceptor';
+import { TransactionsRepository } from './domain/repositories/transactions/transactions.repository';
+import { TransactionRepositoryImp } from './infrastructure/repositories/transactions/transaction.repository.imp';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -36,5 +38,6 @@ export const appConfig: ApplicationConfig = {
     provideLottieOptions({ player: () => player }),
     provideAppInitializer(() => inject(AuthFacade).checkSession()),
     { provide: AuthRepository, useClass: AuthRepositoryImp },
+    { provide: TransactionsRepository, useClass: TransactionRepositoryImp },
   ],
 };

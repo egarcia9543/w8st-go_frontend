@@ -4,7 +4,7 @@ import { AuthRepository } from '../../../domain/repositories/auth/auth.repositor
 import { catchError, Observable, of, map, throwError } from 'rxjs';
 import { User } from '../../../domain/entities/user.entity';
 import { AuthApiDatasource } from '../../datasources/auth/auth.api.datasource';
-import { UserMapper } from '../../mappers/user.mapper';
+import { UserMapper } from '../../mappers/users/user.mapper';
 import { UserDto } from '../../models/user.dto';
 import { HttpErrorResponse, HttpStatusCode } from '@angular/common/http';
 

@@ -1,8 +1,8 @@
 import { Component, inject } from '@angular/core';
-import { AuthFacade } from '../../facades/auth.facade';
 import { Router } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { HlmButton } from '@spartan-ng/helm/button';
+import { AuthFacade } from '../../facades/auth.facade';
 
 @Component({
   selector: 'app-dashboard',
