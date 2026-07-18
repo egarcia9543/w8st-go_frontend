@@ -7,7 +7,7 @@ import { Transaction } from '../../../domain/entities/transaction.entity';
 export class GetTransactionsUseCase {
   private readonly transactionsRepository = inject(TransactionsRepository);
 
-  execute(): Observable<Transaction[]> {
-    return this.transactionsRepository.getTransactions();
+  execute(month?: string): Observable<Transaction[]> {
+    return this.transactionsRepository.getTransactions(month);
   }
 }

@@ -21,14 +21,14 @@ export class TransactionsFacade {
   private readonly _transactionsState = signal({ ...this.initialState });
   readonly transactionsState = this._transactionsState.asReadonly();
 
-  loadTransactions(): void {
+  loadTransactions(month?: string): void {
     this._transactionsState.update((state) => ({
       ...state,
       loading: true,
       error: false,
     }));
 
-    this.getTransactionsUseCase.execute().subscribe({
+    this.getTransactionsUseCase.execute(month).subscribe({
       next: (transactions) => {
         this._transactionsState.update((state) => ({
           ...state,

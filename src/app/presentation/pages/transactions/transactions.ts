@@ -1,8 +1,11 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { CurrencyPipe, DatePipe } from '@angular/common';
+import { Component, inject } from '@angular/core';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
+import { ActivatedRoute, Router } from '@angular/router';
+import { HlmButton } from '@spartan-ng/helm/button';
+import { map } from 'rxjs';
 import { TransactionType } from '../../../domain/entities/transaction.entity';
 import { TransactionsFacade } from '../../facades/transactions.facade';
-import { CurrencyPipe, DatePipe } from '@angular/common';
-import { HlmButton } from '@spartan-ng/helm/button';
 
 @Component({
   selector: 'app-transactions',
@@ -10,15 +13,27 @@ import { HlmButton } from '@spartan-ng/helm/button';
   templateUrl: './transactions.html',
   styleUrl: './transactions.scss',
 })
-export class Transactions implements OnInit {
+export class Transactions {
   protected readonly transactionsFacade = inject(TransactionsFacade);
   protected readonly transactionTypes = TransactionType;
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
 
-  ngOnInit(): void {
-    this.loadTransactions();
+  protected readonly month = toSignal(this.route.queryParamMap.pipe(map((p) => p.get('month'))), {
+    initialValue: null,
+  });
+
+  constructor() {
+    this.route.queryParamMap
+      .pipe(takeUntilDestroyed())
+      .subscribe((p) => this.transactionsFacade.loadTransactions(p.get('month') ?? undefined));
   }
 
-  loadTransactions(): void {
-    this.transactionsFacade.loadTransactions();
+  onMonthChange(month: string): void {
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { month: month || null },
+      queryParamsHandling: 'merge',
+    });
   }
 }
