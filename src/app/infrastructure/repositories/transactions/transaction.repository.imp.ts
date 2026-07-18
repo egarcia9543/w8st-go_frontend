@@ -8,9 +8,9 @@ import { TransactionMapper } from '../../mappers/transactions/transaction.mapper
 export class TransactionRepositoryImp implements TransactionsRepository {
   private readonly transactionsDatasource = inject(TransactionsApiDatasource);
 
-  getTransactions() {
+  getTransactions(month?: string) {
     return this.transactionsDatasource
-      .getTransactions()
+      .getTransactions(month)
       .pipe(map((dtos) => TransactionMapper.toDomainList(dtos)));
   }
 }
