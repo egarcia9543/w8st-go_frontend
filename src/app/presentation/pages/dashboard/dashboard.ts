@@ -5,10 +5,11 @@ import { HlmButton } from '@spartan-ng/helm/button';
 import { AuthFacade } from '../../facades/auth.facade';
 import { SummaryFacade } from '../../facades/summary.facade';
 import { CurrencyPipe, DatePipe } from '@angular/common';
+import { SummaryChart } from '../../components/summary-chart/summary-chart';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [TranslatePipe, HlmButton, DatePipe, CurrencyPipe],
+  imports: [TranslatePipe, HlmButton, DatePipe, CurrencyPipe, SummaryChart],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
 })
