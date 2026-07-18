@@ -103,7 +103,32 @@
   </div>
 
   @if (transactionsFacade.transactionsState().loading) {
-    <p class="text-muted-foreground py-8 text-center">Cargando…</p>
+    <div class="overflow-hidden rounded-lg border border-border bg-card">
+      <div hlmTableContainer>
+        <table hlmTable>
+          <thead hlmTHead>
+            <tr hlmTr class="bg-muted/40">
+              <th hlmTh>Comercio / Destinatario</th>
+              <th hlmTh>Tipo</th>
+              <th hlmTh>Método</th>
+              <th hlmTh>Fecha</th>
+              <th hlmTh><div class="text-right">Monto</div></th>
+            </tr>
+          </thead>
+          <tbody hlmTBody>
+            @for (row of skeletonRows; track row) {
+              <tr hlmTr>
+                <td hlmTd><div hlmSkeleton class="h-4 w-40"></div></td>
+                <td hlmTd><div hlmSkeleton class="h-5 w-20 rounded-full"></div></td>
+                <td hlmTd><div hlmSkeleton class="h-4 w-24"></div></td>
+                <td hlmTd><div hlmSkeleton class="h-4 w-32"></div></td>
+                <td hlmTd><div hlmSkeleton class="ml-auto h-4 w-20"></div></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
   } @else if (transactionsFacade.transactionsState().error) {
     <div class="rounded-lg bg-destructive/10 p-4 text-center">
       <p class="text-sm text-destructive">No se pudieron cargar las transacciones.</p>

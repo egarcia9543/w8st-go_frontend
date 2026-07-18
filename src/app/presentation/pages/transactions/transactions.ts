@@ -5,6 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { HlmButton } from '@spartan-ng/helm/button';
 import { HlmMonthYearCalendar } from '@spartan-ng/helm/calendar';
 import { HlmTableImports } from '@spartan-ng/helm/table';
+import { HlmSkeletonImports } from '@spartan-ng/helm/skeleton';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideCalendar } from '@ng-icons/lucide';
 import { map } from 'rxjs';
@@ -19,7 +20,15 @@ type TypeFilter = 'all' | TransactionType;
 
 @Component({
   selector: 'app-transactions',
-  imports: [CurrencyPipe, DatePipe, HlmButton, HlmTableImports, HlmMonthYearCalendar, NgIcon],
+  imports: [
+    CurrencyPipe,
+    DatePipe,
+    HlmButton,
+    HlmTableImports,
+    HlmSkeletonImports,
+    HlmMonthYearCalendar,
+    NgIcon,
+  ],
   templateUrl: './transactions.html',
   styleUrl: './transactions.scss',
   providers: [provideIcons({ lucideCalendar })],
@@ -51,6 +60,7 @@ export class Transactions {
     return label.charAt(0).toUpperCase() + label.slice(1);
   });
 
+  protected readonly skeletonRows = [0, 1, 2, 3, 4];
   protected readonly pageSizes = [10, 20, 50] as const;
   protected readonly pageSize = signal(10);
   protected readonly pageIndex = signal(0);

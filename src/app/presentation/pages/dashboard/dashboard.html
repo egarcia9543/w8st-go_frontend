@@ -3,7 +3,19 @@
     <h2 class="text-xl font-bold text-foreground mb-4">Resumen por mes</h2>
 
     @if (summaryState().loading) {
-      <p class="text-muted-foreground">Cargando…</p>
+      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        @for (i of skeletonItems; track i) {
+          <div hlmCard class="gap-2">
+            <div hlmCardHeader class="gap-2">
+              <div hlmSkeleton class="h-4 w-24"></div>
+              <div hlmSkeleton class="h-8 w-32"></div>
+            </div>
+            <div hlmCardFooter>
+              <div hlmSkeleton class="h-3 w-20"></div>
+            </div>
+          </div>
+        }
+      </div>
     } @else if (summaryState().error) {
       <div class="rounded-lg bg-destructive/10 p-4 text-center">
         <p class="text-sm text-destructive">No se pudo cargar el resumen.</p>
@@ -37,9 +49,17 @@
     }
   </div>
 
-  @if (
-    !summaryState().loading && !summaryState().error && summaryState().summary.length > 0
-  ) {
+  @if (summaryState().loading) {
+    <div hlmCard>
+      <div hlmCardHeader class="gap-2">
+        <div hlmSkeleton class="h-5 w-40"></div>
+        <div hlmSkeleton class="h-4 w-56"></div>
+      </div>
+      <div hlmCardContent>
+        <div hlmSkeleton class="h-64 w-full"></div>
+      </div>
+    </div>
+  } @else if (!summaryState().error && summaryState().summary.length > 0) {
     <div hlmCard>
       <div hlmCardHeader>
         <h3 hlmCardTitle>Gastos por mes</h3>
