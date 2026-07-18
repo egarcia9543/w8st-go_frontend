@@ -9,6 +9,24 @@
     <button hlmBtn variant="ghost" class="cursor-pointer" (click)="onMonthChange('')">Todos</button>
   }
 </div>
+<button
+  hlmBtn
+  type="button"
+  class="cursor-pointer"
+  [disabled]="transactionsFacade.syncState().syncing"
+  (click)="transactionsFacade.syncTransactions(month() || undefined)"
+>
+  {{ transactionsFacade.syncState().syncing ? 'Sincronizando…' : 'Sincronizar' }}
+</button>
+
+@if (transactionsFacade.syncState().result; as res) {
+  <p class="text-sm text-muted-foreground">
+    Sincronizado: {{ res.transactionsSynced }} nuevas, {{ res.transactionsFailed }} omitidas.
+  </p>
+}
+@if (transactionsFacade.syncState().error) {
+  <p class="text-sm text-destructive">No se pudo sincronizar. Intenta de nuevo.</p>
+}
 <section class="p-6 max-w-2xl mx-auto">
   <h1 class="text-2xl font-bold text-foreground mb-4">Transacciones</h1>
 
