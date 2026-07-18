@@ -9,3 +9,38 @@
     {{ 'dashboard.logout' | translate }}
   </button>
 </section>
+<section class="p-6 max-w-2xl mx-auto">
+  <h2 class="text-xl font-bold text-foreground mb-4">Resumen por mes</h2>
+
+  @if (summaryState().loading) {
+    <p class="text-muted-foreground">Cargando…</p>
+  } @else if (summaryState().error) {
+    <div class="rounded-lg bg-destructive/10 p-4 text-center">
+      <p class="text-sm text-destructive">No se pudo cargar el resumen.</p>
+      <button
+        hlmBtn
+        variant="outline"
+        class="mt-3 cursor-pointer"
+        (click)="summaryFacade.loadSummary()"
+      >
+        Reintentar
+      </button>
+    </div>
+  } @else if (summaryState().summary.length === 0) {
+    <p class="text-muted-foreground text-center py-8">Aún no hay datos.</p>
+  } @else {
+    <ul class="divide-y divide-border">
+      @for (s of summaryState().summary; track s.month) {
+        <li class="flex items-center justify-between py-3">
+          <span class="capitalize text-foreground">{{ s.month + '-01' | date: 'MMMM y' }}</span>
+          <span class="text-right">
+            <span class="font-semibold text-foreground">{{
+              s.total | currency: 'COP' : 'symbol-narrow' : '1.0-0'
+            }}</span>
+            <span class="block text-xs text-muted-foreground">{{ s.count }} transacciones</span>
+          </span>
+        </li>
+      }
+    </ul>
+  }
+</section>

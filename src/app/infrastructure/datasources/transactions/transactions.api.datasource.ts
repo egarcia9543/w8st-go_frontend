@@ -4,6 +4,7 @@ import { environment } from '../../../../environments/environment';
 import { Observable, timeout } from 'rxjs';
 import { TransactionDto } from '../../models/transaction.dto';
 import { SyncDto } from '../../models/sync.dto';
+import { SummaryDto } from '../../models/summary.dto';
 
 @Injectable({ providedIn: 'root' })
 export class TransactionsApiDatasource {
@@ -16,5 +17,9 @@ export class TransactionsApiDatasource {
 
   syncTransactions(): Observable<SyncDto> {
     return this.http.post<SyncDto>(`${environment.apiUrl}/sync`, {}).pipe(timeout(60_000));
+  }
+
+  getSummary(): Observable<SummaryDto[]> {
+    return this.http.get<SummaryDto[]>(`${environment.apiUrl}/transactions/summary`);
   }
 }
