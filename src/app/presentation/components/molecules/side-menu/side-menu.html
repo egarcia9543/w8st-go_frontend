@@ -1,0 +1,47 @@
+<div hlmSidebarWrapper>
+  <hlm-sidebar>
+    <div hlmSidebarContent>
+      <div hlmSidebarGroup>
+        <div hlmSidebarGroupLabel>W8st & Go</div>
+        <div hlmSidebarGroupContent>
+          <ul hlmSidebarMenu>
+            @for (item of _items; track item.title) {
+              <li hlmSidebarMenuItem>
+                <a
+                  hlmSidebarMenuButton
+                  [routerLink]="item.url"
+                  routerLinkActive
+                  #rla="routerLinkActive"
+                  [isActive]="rla.isActive"
+                  [tooltip]="item.title"
+                >
+                  <ng-icon [name]="item.icon" />
+                  <span>{{ item.title }}</span>
+                </a>
+              </li>
+            }
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div hlmSidebarFooter>
+      <ul hlmSidebarMenu>
+        <li hlmSidebarMenuItem>
+          <div hlmSidebarMenuButton size="lg" class="cursor-default hover:bg-transparent">
+            <div class="flex flex-col text-start leading-tight">
+              <span class="truncate font-medium">{{ userName() }}</span>
+              <span class="truncate text-xs">{{ userEmail() }}</span>
+            </div>
+          </div>
+        </li>
+        <li hlmSidebarMenuItem>
+          <button hlmSidebarMenuButton (click)="logout()" [tooltip]="'Cerrar sesión'">
+            <ng-icon name="lucideLogOut" />
+            <span>Cerrar sesión</span>
+          </button>
+        </li>
+      </ul>
+    </div>
+  </hlm-sidebar>
+  <ng-content />
+</div>

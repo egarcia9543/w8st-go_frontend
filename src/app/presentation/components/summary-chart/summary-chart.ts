@@ -48,4 +48,17 @@ export class SummaryChart {
       };
     });
   });
+
+  protected readonly tooltip = computed(() => {
+    const i = this.hovered();
+    if (i === null) return null;
+    const b = this.bars()[i];
+    if (!b) return null;
+
+    const halfW = 62;
+    const tipH = 42;
+    const cx = Math.min(Math.max(b.x + b.width / 2, halfW + 2), this.width - halfW - 2);
+    const cy = Math.max(b.y, tipH + 4);
+    return { cx, cy, total: b.total, count: b.count };
+  });
 }
