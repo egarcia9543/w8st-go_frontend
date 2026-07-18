@@ -1,37 +1,109 @@
-<div class="mb-4 flex items-center gap-3">
-  <input
-    type="month"
-    [value]="month() ?? ''"
-    (change)="onMonthChange($any($event.target).value)"
-    class="rounded-md border border-border bg-background px-2 py-1 text-sm text-foreground"
-  />
-  @if (month()) {
-    <button hlmBtn variant="ghost" class="cursor-pointer" (click)="onMonthChange('')">Todos</button>
-  }
-</div>
-<button
-  hlmBtn
-  type="button"
-  class="cursor-pointer"
-  [disabled]="transactionsFacade.syncState().syncing"
-  (click)="transactionsFacade.syncTransactions(month() || undefined)"
->
-  {{ transactionsFacade.syncState().syncing ? 'Sincronizando…' : 'Sincronizar' }}
-</button>
+<section class="p-6 max-w-6xl mx-auto space-y-4">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <h1 class="text-2xl font-bold text-foreground">Transacciones</h1>
+      <p class="text-sm text-muted-foreground">Historial de movimientos sincronizados.</p>
+    </div>
 
-@if (transactionsFacade.syncState().result; as res) {
-  <p class="text-sm text-muted-foreground">
-    Sincronizado: {{ res.transactionsSynced }} nuevas, {{ res.transactionsFailed }} omitidas.
-  </p>
-}
-@if (transactionsFacade.syncState().error) {
-  <p class="text-sm text-destructive">No se pudo sincronizar. Intenta de nuevo.</p>
-}
-<section class="p-6 max-w-2xl mx-auto">
-  <h1 class="text-2xl font-bold text-foreground mb-4">Transacciones</h1>
+    <div class="flex flex-wrap items-center gap-2">
+      <div class="relative">
+        <button
+          type="button"
+          (click)="datePickerOpen.set(!datePickerOpen())"
+          class="flex cursor-pointer items-center gap-2 rounded-md border border-border bg-background px-3 py-1.5 text-sm text-foreground hover:bg-muted/50"
+        >
+          <ng-icon name="lucideCalendar" class="text-muted-foreground" />
+          <span>{{ monthLabel() }}</span>
+        </button>
+
+        @if (datePickerOpen()) {
+          <div class="fixed inset-0 z-40" (click)="datePickerOpen.set(false)"></div>
+          <div
+            class="absolute right-0 z-50 mt-2 rounded-md border border-border bg-popover text-popover-foreground shadow-md"
+          >
+            <hlm-month-year-calendar
+              [date]="selectedDate()"
+              (dateChange)="onDateSelected($any($event))"
+            />
+          </div>
+        }
+      </div>
+      @if (month()) {
+        <button hlmBtn variant="ghost" size="sm" class="cursor-pointer" (click)="onMonthChange('')">
+          Todos
+        </button>
+      }
+      <button
+        hlmBtn
+        size="sm"
+        type="button"
+        class="cursor-pointer"
+        [disabled]="transactionsFacade.syncState().syncing"
+        (click)="transactionsFacade.syncTransactions(month() || undefined)"
+      >
+        {{ transactionsFacade.syncState().syncing ? 'Sincronizando…' : 'Sincronizar' }}
+      </button>
+    </div>
+  </div>
+
+  @if (transactionsFacade.syncState().result; as res) {
+    <p class="text-sm text-muted-foreground">
+      Sincronizado: {{ res.transactionsSynced }} nuevas, {{ res.transactionsFailed }} omitidas.
+    </p>
+  }
+  @if (transactionsFacade.syncState().error) {
+    <p class="text-sm text-destructive">No se pudo sincronizar. Intenta de nuevo.</p>
+  }
+
+  <!-- Tabs de filtro por tipo -->
+  <div class="flex items-center gap-1 rounded-lg bg-muted p-1 w-fit text-sm">
+    <button
+      type="button"
+      class="cursor-pointer rounded-md px-3 py-1.5 font-medium transition-colors"
+      [class]="
+        typeFilter() === 'all'
+          ? 'bg-background text-foreground shadow-sm'
+          : 'text-muted-foreground hover:text-foreground'
+      "
+      (click)="setTypeFilter('all')"
+    >
+      Todas
+      <span class="ml-1 text-xs text-muted-foreground">{{ counts().all }}</span>
+    </button>
+    <button
+      type="button"
+      class="cursor-pointer rounded-md px-3 py-1.5 font-medium transition-colors"
+      [class]="
+        typeFilter() === transactionTypes.PURCHASE
+          ? 'bg-background text-foreground shadow-sm'
+          : 'text-muted-foreground hover:text-foreground'
+      "
+      (click)="setTypeFilter(transactionTypes.PURCHASE)"
+    >
+      Compras
+      <span class="ml-1 text-xs text-muted-foreground">{{
+        counts()[transactionTypes.PURCHASE]
+      }}</span>
+    </button>
+    <button
+      type="button"
+      class="cursor-pointer rounded-md px-3 py-1.5 font-medium transition-colors"
+      [class]="
+        typeFilter() === transactionTypes.TRANSFER
+          ? 'bg-background text-foreground shadow-sm'
+          : 'text-muted-foreground hover:text-foreground'
+      "
+      (click)="setTypeFilter(transactionTypes.TRANSFER)"
+    >
+      Transferencias
+      <span class="ml-1 text-xs text-muted-foreground">{{
+        counts()[transactionTypes.TRANSFER]
+      }}</span>
+    </button>
+  </div>
 
   @if (transactionsFacade.transactionsState().loading) {
-    <p class="text-muted-foreground">Cargando…</p>
+    <p class="text-muted-foreground py-8 text-center">Cargando…</p>
   } @else if (transactionsFacade.transactionsState().error) {
     <div class="rounded-lg bg-destructive/10 p-4 text-center">
       <p class="text-sm text-destructive">No se pudieron cargar las transacciones.</p>
@@ -44,26 +116,97 @@
         Reintentar
       </button>
     </div>
-  } @else if (transactionsFacade.transactionsState().transactions.length === 0) {
-    <p class="text-muted-foreground text-center py-8">No hay transacciones.</p>
   } @else {
-    <ul class="divide-y divide-border">
-      @for (tx of transactionsFacade.transactionsState().transactions; track tx.id) {
-        <li class="flex items-center justify-between py-3">
-          <div>
-            <p class="font-medium text-foreground">
-              {{ tx.merchant ?? tx.recipientName ?? '—' }}
-            </p>
-            <p class="text-xs text-muted-foreground">
-              {{ tx.transactionDate | date: 'medium' }} ·
-              {{ tx.type === transactionTypes.PURCHASE ? 'Compra' : 'Transferencia' }}
-            </p>
+    <div class="overflow-hidden rounded-lg border border-border bg-card">
+      <div hlmTableContainer>
+        <table hlmTable>
+          <thead hlmTHead>
+            <tr hlmTr class="bg-muted/40">
+              <th hlmTh>Comercio / Destinatario</th>
+              <th hlmTh>Tipo</th>
+              <th hlmTh>Método</th>
+              <th hlmTh>Fecha</th>
+              <th hlmTh><div class="text-right">Monto</div></th>
+            </tr>
+          </thead>
+          <tbody hlmTBody>
+            @for (tx of paged(); track tx.id) {
+              <tr hlmTr>
+                <td hlmTd class="font-medium text-foreground">{{ counterparty(tx) }}</td>
+                <td hlmTd>
+                  <span
+                    class="inline-flex items-center rounded-full border border-border px-2 py-0.5 text-xs text-foreground"
+                  >
+                    {{ typeLabel(tx.type) }}
+                  </span>
+                </td>
+                <td hlmTd class="text-muted-foreground">{{ methodLabel(tx.paymentMethod) }}</td>
+                <td hlmTd class="text-muted-foreground">
+                  {{ tx.transactionDate | date: 'medium' }}
+                </td>
+                <td hlmTd>
+                  <div class="text-right font-semibold text-foreground tabular-nums">
+                    {{ tx.amount | currency: tx.currency : 'symbol-narrow' : '1.0-0' }}
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr hlmTr>
+                <td hlmTd colspan="5">
+                  <div class="py-10 text-center text-muted-foreground">No hay transacciones.</div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Paginación -->
+      <div
+        class="flex flex-wrap items-center justify-between gap-4 border-t border-border px-4 py-3 text-sm"
+      >
+        <p class="text-muted-foreground">{{ filtered().length }} transacción(es)</p>
+
+        <div class="flex items-center gap-6">
+          <div class="flex items-center gap-2">
+            <span class="text-muted-foreground">Filas por página</span>
+            <select
+              [value]="pageSize()"
+              (change)="setPageSize(+$any($event.target).value)"
+              class="cursor-pointer rounded-md border border-border bg-background px-2 py-1 text-foreground"
+            >
+              @for (size of pageSizes; track size) {
+                <option [value]="size">{{ size }}</option>
+              }
+            </select>
           </div>
-          <span class="font-semibold text-foreground">
-            {{ tx.amount | currency: tx.currency : 'symbol-narrow' : '1.0-0' }}
-          </span>
-        </li>
-      }
-    </ul>
+
+          <span class="text-muted-foreground">Página {{ page() + 1 }} de {{ totalPages() }}</span>
+
+          <div class="flex items-center gap-1">
+            <button
+              hlmBtn
+              variant="outline"
+              size="sm"
+              class="cursor-pointer"
+              [disabled]="page() === 0"
+              (click)="prevPage()"
+            >
+              Anterior
+            </button>
+            <button
+              hlmBtn
+              variant="outline"
+              size="sm"
+              class="cursor-pointer"
+              [disabled]="page() >= totalPages() - 1"
+              (click)="nextPage()"
+            >
+              Siguiente
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   }
 </section>

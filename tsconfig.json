@@ -20,7 +20,11 @@
       "@spartan-ng/helm/input": ["./src/app/presentation/components/input/src/index.ts"],
       "@spartan-ng/helm/separator": ["./src/app/presentation/components/separator/src/index.ts"],
       "@spartan-ng/helm/sheet": ["./src/app/presentation/components/sheet/src/index.ts"],
-      "@spartan-ng/helm/tooltip": ["./src/app/presentation/components/tooltip/src/index.ts"]
+      "@spartan-ng/helm/tooltip": ["./src/app/presentation/components/tooltip/src/index.ts"],
+      "@spartan-ng/helm/card": ["./src/app/presentation/components/card/src/index.ts"],
+      "@spartan-ng/helm/table": ["./src/app/presentation/components/table/src/index.ts"],
+      "@spartan-ng/helm/calendar": ["./src/app/presentation/components/calendar/src/index.ts"],
+      "@spartan-ng/helm/select": ["./src/app/presentation/components/select/src/index.ts"]
     }
   },
   "angularCompilerOptions": {

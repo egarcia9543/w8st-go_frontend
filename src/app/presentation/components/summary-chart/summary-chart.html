@@ -38,9 +38,8 @@
   }
 
   <!-- tooltip (total + conteo) -->
-  @if (hovered() !== null) {
-    @let b = bars()[hovered()!];
-    <g [attr.transform]="'translate(' + (b.x + b.width / 2) + ',' + b.y + ')'">
+  @if (tooltip(); as t) {
+    <g [attr.transform]="'translate(' + t.cx + ',' + t.cy + ')'" class="pointer-events-none">
       <rect
         x="-62"
         y="-42"
@@ -51,10 +50,10 @@
         stroke-width="1"
       />
       <text text-anchor="middle" y="-26" class="fill-popover-foreground text-[10px] font-semibold">
-        {{ b.total | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}
+        {{ t.total | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}
       </text>
       <text text-anchor="middle" y="-14" class="fill-muted-foreground text-[9px]">
-        {{ b.count }} transacciones
+        {{ t.count }} transacciones
       </text>
     </g>
   }
