@@ -1,0 +1,60 @@
+<!-- summary-chart.html -->
+<svg
+  [attr.viewBox]="'0 0 ' + width + ' ' + height"
+  class="w-full h-auto"
+  role="img"
+  aria-label="Gastos por mes"
+>
+  <!-- línea base -->
+  <line
+    [attr.x1]="0"
+    [attr.x2]="width"
+    [attr.y1]="baseline"
+    [attr.y2]="baseline"
+    class="stroke-border"
+    stroke-width="1"
+  />
+
+  @for (bar of bars(); track bar.month; let i = $index) {
+    <g (mouseenter)="hovered.set(i)" (mouseleave)="hovered.set(null)" class="cursor-pointer">
+      <rect
+        [attr.x]="bar.x"
+        [attr.y]="bar.y"
+        [attr.width]="bar.width"
+        [attr.height]="bar.height"
+        rx="4"
+        class="fill-primary transition-opacity"
+        [class.opacity-60]="hovered() !== null && hovered() !== i"
+      />
+      <text
+        [attr.x]="bar.x + bar.width / 2"
+        [attr.y]="baseline + 18"
+        text-anchor="middle"
+        class="fill-muted-foreground text-[10px]"
+      >
+        {{ bar.month + '-01' | date: 'MMM' }}
+      </text>
+    </g>
+  }
+
+  <!-- tooltip (total + conteo) -->
+  @if (tooltip(); as t) {
+    <g [attr.transform]="'translate(' + t.cx + ',' + t.cy + ')'" class="pointer-events-none">
+      <rect
+        x="-62"
+        y="-42"
+        width="124"
+        height="34"
+        rx="6"
+        class="fill-popover stroke-border"
+        stroke-width="1"
+      />
+      <text text-anchor="middle" y="-26" class="fill-popover-foreground text-[10px] font-semibold">
+        {{ t.total | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}
+      </text>
+      <text text-anchor="middle" y="-14" class="fill-muted-foreground text-[9px]">
+        {{ t.count }} transacciones
+      </text>
+    </g>
+  }
+</svg>
