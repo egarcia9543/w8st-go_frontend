@@ -12,7 +12,11 @@
       "passwordRequired": "Ingresa tu contraseña.",
       "missingFields": "Faltan email o password.",
       "invalidCredentials": "Credenciales inválidas.",
-      "unexpected": "No pudimos iniciar sesión. Intenta de nuevo."
-    }
+      "unexpected": "No pudimos iniciar sesión. Intenta de nuevo.",
+      "notAllowed": "Esa cuenta de Google no está autorizada para usar la aplicación.",
+      "googleFailed": "No pudimos completar el ingreso con Google. Intenta de nuevo."
+    },
+    "google": "Continuar con Google",
+    "or": "o con tu contraseña"
   }
 }

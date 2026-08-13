@@ -1,7 +1,7 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { LoginUseCase } from '../../application/use-cases/login/login.use-case';
 import { CheckSessionUseCase } from '../../application/use-cases/check-session/check-session.use-case';
-import { ConnectGmailUseCase } from '../../application/use-cases/connect-gmail/connect-gmail.use-case';
+import { SignInWithGoogleUseCase } from '../../application/use-cases/sign-in-with-google/sign-in-with-google.use-case';
 import { User } from '../../domain/entities/user.entity';
 import { Credentials } from '../../domain/entities/credentials.entity';
 import { finalize, Observable, tap } from 'rxjs';
@@ -17,7 +17,7 @@ export class AuthFacade {
   private readonly loginUC = inject(LoginUseCase);
   private readonly checkSessionUC = inject(CheckSessionUseCase);
   private readonly logoutUC = inject(LogoutUseCase);
-  private readonly connectGmailUC = inject(ConnectGmailUseCase);
+  private readonly signInWithGoogleUC = inject(SignInWithGoogleUseCase);
 
   private readonly initialState: UserState = {
     isAuthenticated: false,
@@ -59,7 +59,7 @@ export class AuthFacade {
     );
   }
 
-  connectGmail(): void {
-    this.connectGmailUC.execute();
+  signInWithGoogle(): void {
+    this.signInWithGoogleUC.execute();
   }
 }

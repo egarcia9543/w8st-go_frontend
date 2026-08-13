@@ -40,7 +40,7 @@ export class AuthRepositoryImp implements AuthRepository {
    * Autoriza la lectura de Gmail para `/sync`. Requiere sesión activa y es una
    * redirección del navegador, no una petición de `HttpClient`.
    */
-  connectGmail(): void {
+  signInWithGoogle(): void {
     window.location.href = `${environment.apiUrl}/auth/google`;
   }
 }

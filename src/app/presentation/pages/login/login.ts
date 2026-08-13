@@ -1,12 +1,17 @@
 import { Component, inject, signal } from '@angular/core';
 import { HttpErrorResponse, HttpStatusCode } from '@angular/common/http';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { HlmButton } from '@spartan-ng/helm/button';
 import { HlmInput } from '@spartan-ng/helm/input';
 import { AnimationOptions, LottieComponent } from 'ngx-lottie';
 import { AuthFacade } from '../../facades/auth.facade';
+
+const CALLBACK_ERRORS: Record<string, string> = {
+  not_allowed: 'login.errors.notAllowed',
+  google: 'login.errors.googleFailed',
+};
 
 @Component({
   selector: 'app-login',
@@ -24,6 +29,15 @@ export class Login {
 
   protected readonly loading = signal(false);
   protected readonly errorKey = signal<string | null>(null);
+
+  constructor() {
+    const error = inject(ActivatedRoute).snapshot.queryParamMap.get('error');
+    if (error) this.errorKey.set(CALLBACK_ERRORS[error] ?? 'login.errors.unexpected');
+  }
+
+  public signInWithGoogle(): void {
+    this.authFacade.signInWithGoogle();
+  }
 
   protected readonly form = this.formBuilder.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],

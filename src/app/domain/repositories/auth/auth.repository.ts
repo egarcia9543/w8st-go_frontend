@@ -6,5 +6,5 @@ export abstract class AuthRepository {
   abstract login(credentials: Credentials): Observable<User>;
   abstract checkSession(): Observable<User | null>;
   abstract logout(): Observable<void>;
-  abstract connectGmail(): void;
+  abstract signInWithGoogle(): void;
 }

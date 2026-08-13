@@ -12,7 +12,11 @@
       "passwordRequired": "Enter your password.",
       "missingFields": "Email or password is missing.",
       "invalidCredentials": "Invalid credentials.",
-      "unexpected": "We couldn't log you in. Please try again."
-    }
+      "unexpected": "We couldn't log you in. Please try again.",
+      "notAllowed": "That Google account is not authorized to use this application.",
+      "googleFailed": "We could not complete the Google sign-in. Please try again."
+    },
+    "google": "Continue with Google",
+    "or": "or with your password"
   }
 }

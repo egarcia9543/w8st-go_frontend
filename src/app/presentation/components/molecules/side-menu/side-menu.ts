@@ -54,8 +54,8 @@ export class SideMenu {
     },
   ];
 
-  connectGmail(): void {
-    this.authFacade.connectGmail();
+  signInWithGoogle(): void {
+    this.authFacade.signInWithGoogle();
   }
 
   logout(): void {
