@@ -51,6 +51,21 @@
       }
     </div>
 
+    @if (analyticsFacade.primaryCurrencyMonths().length > 1) {
+      <div hlmCard>
+        <div hlmCardHeader>
+          <h3 hlmCardTitle>Bolsillo vs. crédito</h3>
+          <p hlmCardDescription>
+            Gasto con dinero propio comparado con el de tarjetas de crédito, y los ingresos de cada
+            mes
+          </p>
+        </div>
+        <div hlmCardContent>
+          <app-spending-chart [months]="analyticsFacade.primaryCurrencyMonths()" />
+        </div>
+      </div>
+    }
+
     @if (analyticsFacade.otherCurrencies().length > 0) {
       <p class="text-xs text-muted-foreground">
         Hay movimientos en otras monedas que no se suman aquí:

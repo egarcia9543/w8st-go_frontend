@@ -2,6 +2,7 @@ import { Component, computed, inject, LOCALE_ID } from '@angular/core';
 import { HlmButton } from '@spartan-ng/helm/button';
 import { HlmCardImports } from '@spartan-ng/helm/card';
 import { HlmSkeletonImports } from '@spartan-ng/helm/skeleton';
+import { SpendingChart } from '../../components/spending-chart/spending-chart';
 import { AnalyticsFacade } from '../../facades/analytics.facade';
 import { formatMoney } from '../../pipes/format-money';
 
@@ -15,7 +16,7 @@ interface KpiTile {
 
 @Component({
   selector: 'app-dashboard',
-  imports: [HlmButton, HlmCardImports, HlmSkeletonImports],
+  imports: [HlmButton, HlmCardImports, HlmSkeletonImports, SpendingChart],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
 })

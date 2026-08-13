@@ -1,0 +1,11 @@
+:host {
+  --series-pocket: #2a78d6;
+  --series-credit: #eb6834;
+  --series-income: #1baf7a;
+}
+
+:host-context(:root.dark) {
+  --series-pocket: #3987e5;
+  --series-credit: #d95926;
+  --series-income: #199e70;
+}
