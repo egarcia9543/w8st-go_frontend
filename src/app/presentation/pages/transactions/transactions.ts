@@ -166,7 +166,7 @@ export class Transactions {
     }
     return tx.direction === Direction.INFLOW
       ? 'text-emerald-600 dark:text-emerald-400'
-      : 'text-foreground';
+      : 'text-red-600 dark:text-red-400';
   }
 }
 
