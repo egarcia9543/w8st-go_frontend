@@ -21,6 +21,8 @@ import { AuthFacade } from './presentation/facades/auth.facade';
 import { authInterceptor } from './presentation/interceptors/auth-interceptor';
 import { TransactionsRepository } from './domain/repositories/transactions/transactions.repository';
 import { TransactionRepositoryImp } from './infrastructure/repositories/transactions/transaction.repository.imp';
+import { AnalyticsRepository } from './domain/repositories/analytics/analytics.repository';
+import { AnalyticsRepositoryImp } from './infrastructure/repositories/analytics/analytics.repository.imp';
 import { registerLocaleData } from '@angular/common';
 import localeEsCo from '@angular/common/locales/es-CO';
 registerLocaleData(localeEsCo);
@@ -44,5 +46,6 @@ export const appConfig: ApplicationConfig = {
     provideAppInitializer(() => inject(AuthFacade).checkSession()),
     { provide: AuthRepository, useClass: AuthRepositoryImp },
     { provide: TransactionsRepository, useClass: TransactionRepositoryImp },
+    { provide: AnalyticsRepository, useClass: AnalyticsRepositoryImp },
   ],
 };
