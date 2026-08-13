@@ -1,4 +1,4 @@
-import { CurrencyPipe, DatePipe } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -10,24 +10,27 @@ import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideCalendar } from '@ng-icons/lucide';
 import { map } from 'rxjs';
 import {
+  Direction,
+  FundingSource,
   PaymentMethod,
   Transaction,
   TransactionType,
 } from '../../../domain/entities/transaction.entity';
 import { TransactionsFacade } from '../../facades/transactions.facade';
+import { SignedAmountPipe } from '../../pipes/signed-amount.pipe';
 
 type TypeFilter = 'all' | TransactionType;
 
 @Component({
   selector: 'app-transactions',
   imports: [
-    CurrencyPipe,
     DatePipe,
     HlmButton,
     HlmTableImports,
     HlmSkeletonImports,
     HlmMonthYearCalendar,
     NgIcon,
+    SignedAmountPipe,
   ],
   templateUrl: './transactions.html',
   styleUrl: './transactions.scss',
@@ -134,7 +137,12 @@ export class Transactions {
   }
 
   typeLabel(type: TransactionType): string {
-    return type === TransactionType.PURCHASE ? 'Compra' : 'Transferencia';
+    return TYPE_LABELS[type] ?? this.humanize(type);
+  }
+
+  private humanize(type: string): string {
+    const label = type.replace(/_/g, ' ');
+    return label.charAt(0).toUpperCase() + label.slice(1);
   }
 
   methodLabel(method: PaymentMethod): string {
@@ -149,6 +157,25 @@ export class Transactions {
   }
 
   counterparty(tx: Transaction): string {
-    return tx.merchant ?? tx.recipientName ?? '—';
+    return tx.merchant ?? tx.counterpartyName ?? '—';
+  }
+
+  amountClass(tx: Transaction): string {
+    if (tx.fundingSource === FundingSource.INTERNAL || tx.excludeFromSpending) {
+      return 'text-muted-foreground';
+    }
+    return tx.direction === Direction.INFLOW
+      ? 'text-emerald-600 dark:text-emerald-400'
+      : 'text-foreground';
   }
 }
+
+const TYPE_LABELS: Record<string, string> = {
+  [TransactionType.PURCHASE]: 'Compra',
+  [TransactionType.TRANSFER]: 'Transferencia',
+  [TransactionType.PAYMENT]: 'Pago',
+  [TransactionType.PAYROLL]: 'Nómina',
+  [TransactionType.SUPPLIER_PAYMENT]: 'Pago recibido',
+  [TransactionType.WITHDRAWAL]: 'Retiro',
+  [TransactionType.CASH_ADVANCE]: 'Avance',
+};

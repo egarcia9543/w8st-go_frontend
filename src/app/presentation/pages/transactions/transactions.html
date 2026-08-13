@@ -170,8 +170,8 @@
                   {{ tx.transactionDate | date: 'medium' }}
                 </td>
                 <td hlmTd>
-                  <div class="text-right font-semibold text-foreground tabular-nums">
-                    {{ tx.amount | currency: tx.currency : 'symbol-narrow' : '1.0-0' }}
+                  <div class="text-right font-semibold tabular-nums" [class]="amountClass(tx)">
+                    {{ tx | signedAmount }}
                   </div>
                 </td>
               </tr>
