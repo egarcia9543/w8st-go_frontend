@@ -1,7 +1,8 @@
-import { Component, computed, inject, LOCALE_ID } from '@angular/core';
+import { Component, computed, effect, inject, LOCALE_ID } from '@angular/core';
 import { HlmButton } from '@spartan-ng/helm/button';
 import { HlmCardImports } from '@spartan-ng/helm/card';
 import { HlmSkeletonImports } from '@spartan-ng/helm/skeleton';
+import { CardKind } from '../../../domain/entities/transaction.entity';
 import { SpendingChart } from '../../components/spending-chart/spending-chart';
 import { AnalyticsFacade } from '../../facades/analytics.facade';
 import { formatMoney } from '../../pipes/format-money';
@@ -12,6 +13,16 @@ interface KpiTile {
   value: string;
   detail: string;
   valueClass: string;
+}
+
+interface CardTile {
+  cardId: string;
+  title: string;
+  subtitle: string;
+  total: string;
+  detail: string;
+  topMerchant: string;
+  isCredit: boolean;
 }
 
 @Component({
@@ -82,7 +93,32 @@ export class Dashboard {
     ];
   });
 
+  protected readonly cardTiles = computed<CardTile[]>(() => {
+    const cards = this.analyticsFacade.cardSpendState().cards;
+
+    return cards.map((card) => ({
+      cardId: card.cardId,
+      title: card.alias ?? `${CARD_KIND_LABELS[card.kind]} *${card.last4}`,
+      subtitle: card.alias ? `${CARD_KIND_LABELS[card.kind]} *${card.last4}` : '',
+      total: formatMoney(card.total, card.currency, this.locale),
+      detail: `${card.count} ${card.count === 1 ? 'movimiento' : 'movimientos'}`,
+      topMerchant: card.topMerchants[0]?.merchant ?? '',
+      isCredit: card.kind === CardKind.CREDIT,
+    }));
+  });
+
   constructor() {
     this.analyticsFacade.loadAnalytics();
+
+    effect(() => {
+      const month = this.analyticsFacade.latestMonth()?.month;
+      if (month) this.analyticsFacade.loadCardSpend(month);
+    });
   }
 }
+
+const CARD_KIND_LABELS: Record<string, string> = {
+  [CardKind.CREDIT]: 'Crédito',
+  [CardKind.DEBIT]: 'Débito',
+  [CardKind.ACCOUNT]: 'Cuenta',
+};

@@ -66,6 +66,42 @@
       </div>
     }
 
+    @if (cardTiles().length > 0) {
+      <div class="space-y-3">
+        <h3 class="text-base font-semibold text-foreground">Gasto por producto</h3>
+        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          @for (card of cardTiles(); track card.cardId) {
+            <div
+              hlmCard
+              class="gap-2"
+              [class]="card.isCredit ? 'border-l-4' : ''"
+              [style.border-left-color]="card.isCredit ? 'var(--series-credit)' : null"
+            >
+              <div hlmCardHeader>
+                <p hlmCardDescription class="flex items-center justify-between gap-2">
+                  <span class="truncate">{{ card.title }}</span>
+                  @if (card.isCredit) {
+                    <span
+                      class="shrink-0 rounded-full border border-border px-2 py-0.5 text-[10px] text-muted-foreground"
+                    >
+                      Crédito
+                    </span>
+                  }
+                </p>
+                <h4 hlmCardTitle class="text-xl font-bold tabular-nums">{{ card.total }}</h4>
+              </div>
+              <div hlmCardFooter class="flex-col items-start gap-0.5 text-sm text-muted-foreground">
+                <span>{{ card.detail }}</span>
+                @if (card.topMerchant) {
+                  <span class="truncate text-xs">Mayor gasto: {{ card.topMerchant }}</span>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
     @if (analyticsFacade.otherCurrencies().length > 0) {
       <p class="text-xs text-muted-foreground">
         Hay movimientos en otras monedas que no se suman aquí:

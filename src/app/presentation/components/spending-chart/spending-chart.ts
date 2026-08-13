@@ -58,7 +58,6 @@ const axisMax = (rawMax: number): number => {
 @Component({
   selector: 'app-spending-chart',
   templateUrl: './spending-chart.html',
-  styleUrl: './spending-chart.scss',
 })
 export class SpendingChart {
   readonly months = input.required<MonthlyAnalytics[]>();

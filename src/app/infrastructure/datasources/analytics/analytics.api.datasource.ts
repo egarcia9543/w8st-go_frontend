@@ -3,6 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { MonthlyAnalyticsDto } from '../../models/analytics.dto';
+import { CardSpendDto } from '../../models/card-spend.dto';
 
 @Injectable({ providedIn: 'root' })
 export class AnalyticsApiDatasource {
@@ -16,5 +17,10 @@ export class AnalyticsApiDatasource {
     return this.http.get<MonthlyAnalyticsDto[]>(`${environment.apiUrl}/analytics/summary`, {
       params,
     });
+  }
+
+  getCardSpend(month?: string): Observable<CardSpendDto[]> {
+    const options = month ? { params: new HttpParams().set('month', month) } : {};
+    return this.http.get<CardSpendDto[]>(`${environment.apiUrl}/analytics/by-card`, options);
   }
 }

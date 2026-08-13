@@ -14,6 +14,11 @@
     sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
 
   --radius: 0.625rem;
+
+  --series-pocket: #2a78d6;
+  --series-credit: #eb6834;
+  --series-income: #1baf7a;
+
   --background: oklch(1 0 0);
   --foreground: oklch(0.147 0.004 49.25);
   --card: oklch(1 0 0);
@@ -44,6 +49,10 @@
 
 :root.dark {
   color-scheme: dark;
+
+  --series-pocket: #3987e5;
+  --series-credit: #d95926;
+  --series-income: #199e70;
 
   --background: oklch(0.147 0.004 49.25);
   --foreground: oklch(0.985 0.001 106.423);
