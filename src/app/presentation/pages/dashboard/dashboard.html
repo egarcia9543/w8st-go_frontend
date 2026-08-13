@@ -69,32 +69,90 @@
     @if (cardTiles().length > 0) {
       <div class="space-y-3">
         <h3 class="text-base font-semibold text-foreground">Gasto por producto</h3>
-        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           @for (card of cardTiles(); track card.cardId) {
             <div
-              hlmCard
-              class="gap-2"
-              [class]="card.isCredit ? 'border-l-4' : ''"
-              [style.border-left-color]="card.isCredit ? 'var(--series-credit)' : null"
+              class="relative flex aspect-[1.586] flex-col justify-between overflow-hidden rounded-xl p-5 shadow-lg"
+              [style.background]="card.face.background"
+              [style.color]="card.face.ink"
             >
-              <div hlmCardHeader>
-                <p hlmCardDescription class="flex items-center justify-between gap-2">
-                  <span class="truncate">{{ card.title }}</span>
-                  @if (card.isCredit) {
+              @if (card.face.arcs.length > 0) {
+                <svg
+                  class="pointer-events-none absolute inset-0 h-full w-full"
+                  viewBox="0 0 340 214"
+                  preserveAspectRatio="xMidYMid slice"
+                  aria-hidden="true"
+                >
+                  @for (arc of card.face.arcs; track arc.color) {
+                    <path
+                      [attr.d]="arc.d"
+                      fill="none"
+                      [attr.stroke]="arc.color"
+                      [attr.stroke-width]="arc.width"
+                      stroke-linecap="round"
+                    />
+                  }
+                </svg>
+              }
+
+              <div class="relative flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <p class="truncate text-sm font-semibold">{{ card.name }}</p>
+                  <p
+                    class="text-[11px] tracking-wide uppercase"
+                    [style.color]="card.face.inkSoft"
+                  >
+                    {{ card.kindLabel }}
+                  </p>
+                </div>
+
+                @switch (card.face.brand) {
+                  @case ('mastercard') {
+                    <svg class="h-7 w-11 shrink-0" viewBox="0 0 48 30" aria-label="Mastercard">
+                      <circle cx="18" cy="15" r="12" fill="#eb001b" />
+                      <circle cx="30" cy="15" r="12" fill="#f79e1b" fill-opacity="0.9" />
+                    </svg>
+                  }
+                  @case ('amex') {
                     <span
-                      class="shrink-0 rounded-full border border-border px-2 py-0.5 text-[10px] text-muted-foreground"
+                      class="shrink-0 rounded-sm px-2 py-1 text-[9px] leading-none font-bold tracking-[0.14em]"
+                      [style.background]="card.face.ink"
+                      [style.color]="card.face.background"
                     >
-                      Crédito
+                      AMEX
                     </span>
                   }
-                </p>
-                <h4 hlmCardTitle class="text-xl font-bold tabular-nums">{{ card.total }}</h4>
-              </div>
-              <div hlmCardFooter class="flex-col items-start gap-0.5 text-sm text-muted-foreground">
-                <span>{{ card.detail }}</span>
-                @if (card.topMerchant) {
-                  <span class="truncate text-xs">Mayor gasto: {{ card.topMerchant }}</span>
                 }
+              </div>
+
+              <div class="relative flex items-center gap-3">
+                <div
+                  class="h-7 w-10 shrink-0 rounded-md shadow-inner"
+                  [style.background]="card.face.chip"
+                ></div>
+                <svg class="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  @for (wave of contactlessWaves; track wave) {
+                    <path
+                      [attr.d]="wave"
+                      [attr.stroke]="card.face.ink"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                    />
+                  }
+                </svg>
+                <p class="font-mono text-sm tracking-[0.2em]" [style.color]="card.face.inkSoft">
+                  •••• {{ card.last4 }}
+                </p>
+              </div>
+
+              <div class="relative flex items-end justify-between gap-3">
+                <div class="min-w-0">
+                  <p class="text-[11px] tracking-wide uppercase" [style.color]="card.face.inkSoft">
+                    Gasto del mes
+                  </p>
+                  <p class="text-xl font-bold">{{ card.total }}</p>
+                </div>
+                <p class="shrink-0 text-xs" [style.color]="card.face.inkSoft">{{ card.detail }}</p>
               </div>
             </div>
           }
