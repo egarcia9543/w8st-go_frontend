@@ -2,6 +2,17 @@
   "login": {
     "title": "Welcome",
     "subtitle": "Please log in to your account to continue.",
-    "loginWithGoogle": "Log in with Google"
+    "email": "Email",
+    "password": "Password",
+    "submit": "Log in",
+    "submitting": "Logging in...",
+    "errors": {
+      "emailRequired": "Enter your email.",
+      "emailInvalid": "Enter a valid email.",
+      "passwordRequired": "Enter your password.",
+      "missingFields": "Email or password is missing.",
+      "invalidCredentials": "Invalid credentials.",
+      "unexpected": "We couldn't log you in. Please try again."
+    }
   }
 }

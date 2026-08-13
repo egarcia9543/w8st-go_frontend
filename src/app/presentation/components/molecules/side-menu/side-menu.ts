@@ -8,6 +8,7 @@ import {
   lucideSearch,
   lucideSettings,
   lucideLogOut,
+  lucideMail,
 } from '@ng-icons/lucide';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthFacade } from '../../../facades/auth.facade';
@@ -25,6 +26,7 @@ import { AuthFacade } from '../../../facades/auth.facade';
       lucideSearch,
       lucideSettings,
       lucideLogOut,
+      lucideMail,
     }),
   ],
 })
@@ -51,6 +53,10 @@ export class SideMenu {
       icon: 'lucideInbox',
     },
   ];
+
+  connectGmail(): void {
+    this.authFacade.connectGmail();
+  }
 
   logout(): void {
     this.authFacade.logout().subscribe(() => this.router.navigate(['/login']));

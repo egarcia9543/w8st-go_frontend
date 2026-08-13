@@ -3,6 +3,7 @@ import { environment } from '../../../../environments/environment';
 import { AuthRepository } from '../../../domain/repositories/auth/auth.repository';
 import { catchError, Observable, of, map, throwError } from 'rxjs';
 import { User } from '../../../domain/entities/user.entity';
+import { Credentials } from '../../../domain/entities/credentials.entity';
 import { AuthApiDatasource } from '../../datasources/auth/auth.api.datasource';
 import { UserMapper } from '../../mappers/users/user.mapper';
 import { UserDto } from '../../models/user.dto';
@@ -11,8 +12,13 @@ import { HttpErrorResponse, HttpStatusCode } from '@angular/common/http';
 @Injectable()
 export class AuthRepositoryImp implements AuthRepository {
   private readonly authDatasource = inject(AuthApiDatasource);
-  login(): void {
-    window.location.href = `${environment.apiUrl}/auth/google`;
+
+  login(credentials: Credentials): Observable<User> {
+    return this.authDatasource.login(credentials).pipe(
+      map((user: UserDto) => {
+        return UserMapper.toDomain(user);
+      }),
+    );
   }
 
   checkSession(): Observable<User | null> {
@@ -28,5 +34,13 @@ export class AuthRepositoryImp implements AuthRepository {
 
   logout(): Observable<void> {
     return this.authDatasource.logout();
+  }
+
+  /**
+   * Autoriza la lectura de Gmail para `/sync`. Requiere sesión activa y es una
+   * redirección del navegador, no una petición de `HttpClient`.
+   */
+  connectGmail(): void {
+    window.location.href = `${environment.apiUrl}/auth/google`;
   }
 }

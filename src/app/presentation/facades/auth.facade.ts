@@ -1,7 +1,9 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { LoginUseCase } from '../../application/use-cases/login/login.use-case';
 import { CheckSessionUseCase } from '../../application/use-cases/check-session/check-session.use-case';
+import { ConnectGmailUseCase } from '../../application/use-cases/connect-gmail/connect-gmail.use-case';
 import { User } from '../../domain/entities/user.entity';
+import { Credentials } from '../../domain/entities/credentials.entity';
 import { finalize, Observable, tap } from 'rxjs';
 import { LogoutUseCase } from '../../application/use-cases/logout/logout.use-case';
 
@@ -15,6 +17,7 @@ export class AuthFacade {
   private readonly loginUC = inject(LoginUseCase);
   private readonly checkSessionUC = inject(CheckSessionUseCase);
   private readonly logoutUC = inject(LogoutUseCase);
+  private readonly connectGmailUC = inject(ConnectGmailUseCase);
 
   private readonly initialState: UserState = {
     isAuthenticated: false,
@@ -24,8 +27,12 @@ export class AuthFacade {
   private readonly _sessionState = signal<UserState>({ ...this.initialState });
   readonly sessionState = this._sessionState.asReadonly();
 
-  loginWithGoogle(): void {
-    this.loginUC.execute();
+  login(credentials: Credentials): Observable<User> {
+    return this.loginUC.execute(credentials).pipe(
+      tap((user) => {
+        this._sessionState.set({ isAuthenticated: true, user });
+      }),
+    );
   }
 
   checkSession(): Observable<User | null> {
@@ -50,5 +57,9 @@ export class AuthFacade {
         this.clearSession();
       }),
     );
+  }
+
+  connectGmail(): void {
+    this.connectGmailUC.execute();
   }
 }
