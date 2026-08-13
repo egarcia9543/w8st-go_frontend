@@ -55,51 +55,78 @@
     <p class="text-sm text-destructive">No se pudo sincronizar. Intenta de nuevo.</p>
   }
 
-  <!-- Tabs de filtro por tipo -->
-  <div class="flex items-center gap-1 rounded-lg bg-muted p-1 w-fit text-sm">
-    <button
-      type="button"
-      class="cursor-pointer rounded-md px-3 py-1.5 font-medium transition-colors"
-      [class]="
-        typeFilter() === 'all'
-          ? 'bg-background text-foreground shadow-sm'
-          : 'text-muted-foreground hover:text-foreground'
-      "
-      (click)="setTypeFilter('all')"
+  <div class="flex flex-wrap items-center gap-3">
+    <div class="flex items-center gap-1 rounded-lg bg-muted p-1 w-fit text-sm">
+      <button
+        type="button"
+        class="cursor-pointer rounded-md px-3 py-1.5 font-medium transition-colors"
+        [class]="
+          directionFilter() === 'all'
+            ? 'bg-background text-foreground shadow-sm'
+            : 'text-muted-foreground hover:text-foreground'
+        "
+        (click)="setDirectionFilter('all')"
+      >
+        Todas
+        <span class="ml-1 text-xs text-muted-foreground">{{ counts().all }}</span>
+      </button>
+      <button
+        type="button"
+        class="cursor-pointer rounded-md px-3 py-1.5 font-medium transition-colors"
+        [class]="
+          directionFilter() === directions.INFLOW
+            ? 'bg-background text-foreground shadow-sm'
+            : 'text-muted-foreground hover:text-foreground'
+        "
+        (click)="setDirectionFilter(directions.INFLOW)"
+      >
+        Ingresos
+        <span class="ml-1 text-xs text-muted-foreground">{{ counts()[directions.INFLOW] }}</span>
+      </button>
+      <button
+        type="button"
+        class="cursor-pointer rounded-md px-3 py-1.5 font-medium transition-colors"
+        [class]="
+          directionFilter() === directions.OUTFLOW
+            ? 'bg-background text-foreground shadow-sm'
+            : 'text-muted-foreground hover:text-foreground'
+        "
+        (click)="setDirectionFilter(directions.OUTFLOW)"
+      >
+        Gastos
+        <span class="ml-1 text-xs text-muted-foreground">{{ counts()[directions.OUTFLOW] }}</span>
+      </button>
+    </div>
+
+    <select
+      [value]="sourceFilter()"
+      (change)="setSourceFilter($any($event.target).value)"
+      class="cursor-pointer rounded-md border border-border bg-background px-2 py-1.5 text-sm text-foreground"
     >
-      Todas
-      <span class="ml-1 text-xs text-muted-foreground">{{ counts().all }}</span>
-    </button>
-    <button
-      type="button"
-      class="cursor-pointer rounded-md px-3 py-1.5 font-medium transition-colors"
-      [class]="
-        typeFilter() === transactionTypes.PURCHASE
-          ? 'bg-background text-foreground shadow-sm'
-          : 'text-muted-foreground hover:text-foreground'
-      "
-      (click)="setTypeFilter(transactionTypes.PURCHASE)"
-    >
-      Compras
-      <span class="ml-1 text-xs text-muted-foreground">{{
-        counts()[transactionTypes.PURCHASE]
-      }}</span>
-    </button>
-    <button
-      type="button"
-      class="cursor-pointer rounded-md px-3 py-1.5 font-medium transition-colors"
-      [class]="
-        typeFilter() === transactionTypes.TRANSFER
-          ? 'bg-background text-foreground shadow-sm'
-          : 'text-muted-foreground hover:text-foreground'
-      "
-      (click)="setTypeFilter(transactionTypes.TRANSFER)"
-    >
-      Transferencias
-      <span class="ml-1 text-xs text-muted-foreground">{{
-        counts()[transactionTypes.TRANSFER]
-      }}</span>
-    </button>
+      <option value="all">Toda fuente</option>
+      <option [value]="fundingSources.OWN_FUNDS">De mi bolsillo</option>
+      <option [value]="fundingSources.CREDIT">Con crédito</option>
+      <option [value]="fundingSources.INTERNAL">Movimientos internos</option>
+    </select>
+
+    @if (cardOptions().length > 0) {
+      <select
+        [value]="cardFilter()"
+        (change)="setCardFilter($any($event.target).value)"
+        class="cursor-pointer rounded-md border border-border bg-background px-2 py-1.5 text-sm text-foreground"
+      >
+        <option value="all">Todos los productos</option>
+        @for (card of cardOptions(); track card.id) {
+          <option [value]="card.id">{{ card.label }}</option>
+        }
+      </select>
+    }
+
+    @if (hasActiveFilters()) {
+      <button hlmBtn variant="ghost" size="sm" class="cursor-pointer" (click)="clearFilters()">
+        Limpiar filtros
+      </button>
+    }
   </div>
 
   @if (transactionsFacade.transactionsState().loading) {

@@ -10,6 +10,7 @@ import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideCalendar } from '@ng-icons/lucide';
 import { map } from 'rxjs';
 import {
+  CardKind,
   Direction,
   FundingSource,
   PaymentMethod,
@@ -19,7 +20,13 @@ import {
 import { TransactionsFacade } from '../../facades/transactions.facade';
 import { SignedAmountPipe } from '../../pipes/signed-amount.pipe';
 
-type TypeFilter = 'all' | TransactionType;
+type DirectionFilter = 'all' | Direction;
+type SourceFilter = 'all' | FundingSource;
+
+interface CardOption {
+  id: string;
+  label: string;
+}
 
 @Component({
   selector: 'app-transactions',
@@ -38,7 +45,8 @@ type TypeFilter = 'all' | TransactionType;
 })
 export class Transactions {
   protected readonly transactionsFacade = inject(TransactionsFacade);
-  protected readonly transactionTypes = TransactionType;
+  protected readonly directions = Direction;
+  protected readonly fundingSources = FundingSource;
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
 
@@ -67,7 +75,9 @@ export class Transactions {
   protected readonly pageSizes = [10, 20, 50] as const;
   protected readonly pageSize = signal(10);
   protected readonly pageIndex = signal(0);
-  protected readonly typeFilter = signal<TypeFilter>('all');
+  protected readonly directionFilter = signal<DirectionFilter>('all');
+  protected readonly sourceFilter = signal<SourceFilter>('all');
+  protected readonly cardFilter = signal<string>('all');
 
   private readonly allTx = computed(() => this.transactionsFacade.transactionsState().transactions);
 
@@ -75,15 +85,43 @@ export class Transactions {
     const tx = this.allTx();
     return {
       all: tx.length,
-      [TransactionType.PURCHASE]: tx.filter((t) => t.type === TransactionType.PURCHASE).length,
-      [TransactionType.TRANSFER]: tx.filter((t) => t.type === TransactionType.TRANSFER).length,
+      [Direction.INFLOW]: tx.filter((t) => t.direction === Direction.INFLOW).length,
+      [Direction.OUTFLOW]: tx.filter((t) => t.direction === Direction.OUTFLOW).length,
     };
   });
 
+  protected readonly cardOptions = computed<CardOption[]>(() => {
+    const byId = new Map<string, CardOption>();
+
+    for (const tx of this.allTx()) {
+      if (!tx.card || byId.has(tx.card.id)) continue;
+      byId.set(tx.card.id, {
+        id: tx.card.id,
+        label: tx.card.alias ?? `${CARD_KIND_LABELS[tx.card.kind]} *${tx.card.last4}`,
+      });
+    }
+
+    return [...byId.values()].sort((a, b) => a.label.localeCompare(b.label));
+  });
+
+  protected readonly hasActiveFilters = computed(
+    () =>
+      this.directionFilter() !== 'all' ||
+      this.sourceFilter() !== 'all' ||
+      this.cardFilter() !== 'all',
+  );
+
   protected readonly filtered = computed(() => {
-    const f = this.typeFilter();
-    const tx = this.allTx();
-    return f === 'all' ? tx : tx.filter((t) => t.type === f);
+    const direction = this.directionFilter();
+    const source = this.sourceFilter();
+    const cardId = this.cardFilter();
+
+    return this.allTx().filter((tx) => {
+      if (direction !== 'all' && tx.direction !== direction) return false;
+      if (source !== 'all' && tx.fundingSource !== source) return false;
+      if (cardId !== 'all' && tx.card?.id !== cardId) return false;
+      return true;
+    });
   });
 
   protected readonly totalPages = computed(() =>
@@ -118,8 +156,25 @@ export class Transactions {
     this.onMonthChange(`${year}-${monthNumber}`);
   }
 
-  setTypeFilter(filter: TypeFilter): void {
-    this.typeFilter.set(filter);
+  setDirectionFilter(filter: DirectionFilter): void {
+    this.directionFilter.set(filter);
+    this.pageIndex.set(0);
+  }
+
+  setSourceFilter(filter: string): void {
+    this.sourceFilter.set(filter as SourceFilter);
+    this.pageIndex.set(0);
+  }
+
+  setCardFilter(cardId: string): void {
+    this.cardFilter.set(cardId);
+    this.pageIndex.set(0);
+  }
+
+  clearFilters(): void {
+    this.directionFilter.set('all');
+    this.sourceFilter.set('all');
+    this.cardFilter.set('all');
     this.pageIndex.set(0);
   }
 
@@ -169,6 +224,12 @@ export class Transactions {
       : 'text-red-600 dark:text-red-400';
   }
 }
+
+const CARD_KIND_LABELS: Record<string, string> = {
+  [CardKind.CREDIT]: 'Crédito',
+  [CardKind.DEBIT]: 'Débito',
+  [CardKind.ACCOUNT]: 'Cuenta',
+};
 
 const TYPE_LABELS: Record<string, string> = {
   [TransactionType.PURCHASE]: 'Compra',
