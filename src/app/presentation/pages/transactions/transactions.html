@@ -99,27 +99,30 @@
     </div>
 
     <hlm-select
-      class="w-44"
       [value]="sourceFilter()"
+      [itemToString]="sourceToLabel"
       (valueChange)="setSourceFilter($any($event))"
     >
-      <hlm-select-trigger class="w-44">
+      <hlm-select-trigger class="w-48">
         <hlm-select-value />
       </hlm-select-trigger>
-      <hlm-select-content>
-        <hlm-select-item value="all">Toda fuente</hlm-select-item>
-        <hlm-select-item [value]="fundingSources.OWN_FUNDS">De mi bolsillo</hlm-select-item>
-        <hlm-select-item [value]="fundingSources.CREDIT">Con crédito</hlm-select-item>
-        <hlm-select-item [value]="fundingSources.INTERNAL">Movimientos internos</hlm-select-item>
+      <hlm-select-content *hlmSelectPortal>
+        @for (option of sourceOptions; track option.value) {
+          <hlm-select-item [value]="option.value">{{ option.label }}</hlm-select-item>
+        }
       </hlm-select-content>
     </hlm-select>
 
     @if (cardOptions().length > 0) {
-      <hlm-select class="w-48" [value]="cardFilter()" (valueChange)="setCardFilter($any($event))">
+      <hlm-select
+        [value]="cardFilter()"
+        [itemToString]="cardToLabel"
+        (valueChange)="setCardFilter($any($event))"
+      >
         <hlm-select-trigger class="w-48">
           <hlm-select-value />
         </hlm-select-trigger>
-        <hlm-select-content>
+        <hlm-select-content *hlmSelectPortal>
           <hlm-select-item value="all">Todos los productos</hlm-select-item>
           @for (card of cardOptions(); track card.id) {
             <hlm-select-item [value]="card.id">{{ card.label }}</hlm-select-item>

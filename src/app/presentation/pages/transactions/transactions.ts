@@ -93,6 +93,21 @@ export class Transactions {
   protected readonly sourceFilter = signal<SourceFilter>('all');
   protected readonly cardFilter = signal<string>('all');
 
+  protected readonly sourceOptions: ReadonlyArray<{ value: string; label: string }> = [
+    { value: 'all', label: 'Toda fuente' },
+    { value: FundingSource.OWN_FUNDS, label: 'De mi bolsillo' },
+    { value: FundingSource.CREDIT, label: 'Con crédito' },
+    { value: FundingSource.INTERNAL, label: 'Movimientos internos' },
+  ];
+
+  protected readonly sourceToLabel = (value: string): string =>
+    this.sourceOptions.find((option) => option.value === value)?.label ?? value;
+
+  protected readonly cardToLabel = (id: string): string =>
+    id === 'all'
+      ? 'Todos los productos'
+      : (this.cardOptions().find((card) => card.id === id)?.label ?? id);
+
   private readonly allTx = computed(() => this.transactionsFacade.transactionsState().transactions);
 
   protected readonly counts = computed(() => {
