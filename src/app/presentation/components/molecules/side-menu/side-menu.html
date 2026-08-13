@@ -35,6 +35,12 @@
           </div>
         </li>
         <li hlmSidebarMenuItem>
+          <button hlmSidebarMenuButton (click)="connectGmail()" [tooltip]="'Conectar Gmail'">
+            <ng-icon name="lucideMail" />
+            <span>Conectar Gmail</span>
+          </button>
+        </li>
+        <li hlmSidebarMenuItem>
           <button hlmSidebarMenuButton (click)="logout()" [tooltip]="'Cerrar sesión'">
             <ng-icon name="lucideLogOut" />
             <span>Cerrar sesión</span>

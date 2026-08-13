@@ -5,7 +5,7 @@ export class UserMapper {
   static toDomain(userDto: UserDto): User {
     return {
       userEmail: userDto.user.email,
-      userName: userDto.user.name,
+      userName: userDto.user.name ?? '',
     };
   }
 }

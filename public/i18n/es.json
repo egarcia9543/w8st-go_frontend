@@ -2,6 +2,17 @@
   "login": {
     "title": "Bienvenido",
     "subtitle": "Por favor, inicia sesión en tu cuenta para continuar.",
-    "loginWithGoogle": "Iniciar sesión con Google"
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "submit": "Iniciar sesión",
+    "submitting": "Iniciando sesión...",
+    "errors": {
+      "emailRequired": "Ingresa tu correo electrónico.",
+      "emailInvalid": "Ingresa un correo electrónico válido.",
+      "passwordRequired": "Ingresa tu contraseña.",
+      "missingFields": "Faltan email o password.",
+      "invalidCredentials": "Credenciales inválidas.",
+      "unexpected": "No pudimos iniciar sesión. Intenta de nuevo."
+    }
   }
 }
