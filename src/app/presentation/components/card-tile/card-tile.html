@@ -1,0 +1,30 @@
+<div
+  class="relative flex aspect-[1.586] flex-col justify-end overflow-hidden rounded-xl shadow-lg"
+>
+  <img
+    [src]="art()"
+    [alt]="name()"
+    class="absolute inset-0 h-full w-full object-cover"
+    loading="lazy"
+  />
+  <div
+    class="absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-black/85 via-black/55 to-transparent"
+  ></div>
+
+  <div class="relative space-y-1 p-5 text-white">
+    <div class="flex items-baseline justify-between gap-3">
+      <p class="truncate text-sm font-semibold drop-shadow-sm">{{ name() }}</p>
+      <p class="shrink-0 font-mono text-xs tracking-[0.18em] text-white/75">
+        •••• {{ card().last4 }}
+      </p>
+    </div>
+
+    <div class="flex items-end justify-between gap-3">
+      <div class="min-w-0">
+        <p class="text-[11px] tracking-wide text-white/70 uppercase">Gasto del mes</p>
+        <p class="text-xl font-bold drop-shadow-sm">{{ total() }}</p>
+      </div>
+      <p class="shrink-0 text-xs text-white/75">{{ detail() }}</p>
+    </div>
+  </div>
+</div>
