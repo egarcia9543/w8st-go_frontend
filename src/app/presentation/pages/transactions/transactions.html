@@ -98,28 +98,34 @@
       </button>
     </div>
 
-    <select
+    <hlm-select
+      class="w-44"
       [value]="sourceFilter()"
-      (change)="setSourceFilter($any($event.target).value)"
-      class="cursor-pointer rounded-md border border-border bg-background px-2 py-1.5 text-sm text-foreground"
+      (valueChange)="setSourceFilter($any($event))"
     >
-      <option value="all">Toda fuente</option>
-      <option [value]="fundingSources.OWN_FUNDS">De mi bolsillo</option>
-      <option [value]="fundingSources.CREDIT">Con crédito</option>
-      <option [value]="fundingSources.INTERNAL">Movimientos internos</option>
-    </select>
+      <hlm-select-trigger class="w-44">
+        <hlm-select-value />
+      </hlm-select-trigger>
+      <hlm-select-content>
+        <hlm-select-item value="all">Toda fuente</hlm-select-item>
+        <hlm-select-item [value]="fundingSources.OWN_FUNDS">De mi bolsillo</hlm-select-item>
+        <hlm-select-item [value]="fundingSources.CREDIT">Con crédito</hlm-select-item>
+        <hlm-select-item [value]="fundingSources.INTERNAL">Movimientos internos</hlm-select-item>
+      </hlm-select-content>
+    </hlm-select>
 
     @if (cardOptions().length > 0) {
-      <select
-        [value]="cardFilter()"
-        (change)="setCardFilter($any($event.target).value)"
-        class="cursor-pointer rounded-md border border-border bg-background px-2 py-1.5 text-sm text-foreground"
-      >
-        <option value="all">Todos los productos</option>
-        @for (card of cardOptions(); track card.id) {
-          <option [value]="card.id">{{ card.label }}</option>
-        }
-      </select>
+      <hlm-select class="w-48" [value]="cardFilter()" (valueChange)="setCardFilter($any($event))">
+        <hlm-select-trigger class="w-48">
+          <hlm-select-value />
+        </hlm-select-trigger>
+        <hlm-select-content>
+          <hlm-select-item value="all">Todos los productos</hlm-select-item>
+          @for (card of cardOptions(); track card.id) {
+            <hlm-select-item [value]="card.id">{{ card.label }}</hlm-select-item>
+          }
+        </hlm-select-content>
+      </hlm-select>
     }
 
     @if (hasActiveFilters()) {
@@ -210,6 +216,35 @@
               </tr>
             }
           </tbody>
+
+          @if (filtered().length > 0) {
+            <tfoot>
+              @for (total of totals(); track total.currency) {
+                <tr hlmTr class="border-t-2 border-border bg-muted/40 hover:bg-muted/40">
+                  <td hlmTd colspan="4">
+                    @if (total.hasBoth) {
+                      <span class="text-sm text-muted-foreground">
+                        {{ total.count }} movimientos · Ingresos {{ total.inflowLabel }} · Gastos
+                        {{ total.outflowLabel }}
+                      </span>
+                    } @else {
+                      <span class="text-sm text-muted-foreground">
+                        Total de {{ total.count }} movimientos
+                      </span>
+                    }
+                  </td>
+                  <td hlmTd>
+                    <div
+                      class="text-right text-base font-bold tabular-nums"
+                      [class]="total.netClass"
+                    >
+                      {{ total.netLabel }}
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tfoot>
+          }
         </table>
       </div>
 

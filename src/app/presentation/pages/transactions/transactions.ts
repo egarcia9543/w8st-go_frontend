@@ -1,9 +1,10 @@
 import { DatePipe } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, LOCALE_ID, signal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { HlmButton } from '@spartan-ng/helm/button';
 import { HlmMonthYearCalendar } from '@spartan-ng/helm/calendar';
+import { HlmSelectImports } from '@spartan-ng/helm/select';
 import { HlmTableImports } from '@spartan-ng/helm/table';
 import { HlmSkeletonImports } from '@spartan-ng/helm/skeleton';
 import { NgIcon, provideIcons } from '@ng-icons/core';
@@ -18,6 +19,7 @@ import {
   TransactionType,
 } from '../../../domain/entities/transaction.entity';
 import { TransactionsFacade } from '../../facades/transactions.facade';
+import { formatMoney } from '../../pipes/format-money';
 import { SignedAmountPipe } from '../../pipes/signed-amount.pipe';
 
 type DirectionFilter = 'all' | Direction;
@@ -28,6 +30,16 @@ interface CardOption {
   label: string;
 }
 
+interface CurrencyTotal {
+  currency: string;
+  count: number;
+  hasBoth: boolean;
+  inflowLabel: string;
+  outflowLabel: string;
+  netLabel: string;
+  netClass: string;
+}
+
 @Component({
   selector: 'app-transactions',
   imports: [
@@ -36,6 +48,7 @@ interface CardOption {
     HlmTableImports,
     HlmSkeletonImports,
     HlmMonthYearCalendar,
+    HlmSelectImports,
     NgIcon,
     SignedAmountPipe,
   ],
@@ -47,6 +60,7 @@ export class Transactions {
   protected readonly transactionsFacade = inject(TransactionsFacade);
   protected readonly directions = Direction;
   protected readonly fundingSources = FundingSource;
+  private readonly locale = inject(LOCALE_ID);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
 
@@ -122,6 +136,45 @@ export class Transactions {
       if (cardId !== 'all' && tx.card?.id !== cardId) return false;
       return true;
     });
+  });
+
+  protected readonly totals = computed<CurrencyTotal[]>(() => {
+    const byCurrency = new Map<string, { inflow: number; outflow: number; count: number }>();
+
+    for (const tx of this.filtered()) {
+      const entry = byCurrency.get(tx.currency) ?? { inflow: 0, outflow: 0, count: 0 };
+      entry.count += 1;
+
+      const isInternal = tx.fundingSource === FundingSource.INTERNAL || tx.excludeFromSpending;
+      if (!isInternal) {
+        if (tx.direction === Direction.INFLOW) entry.inflow += tx.amount;
+        else entry.outflow += tx.amount;
+      }
+
+      byCurrency.set(tx.currency, entry);
+    }
+
+    return [...byCurrency.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([currency, { inflow, outflow, count }]) => {
+        const net = inflow - outflow;
+        const sign = net > 0 ? '+' : net < 0 ? '−' : '';
+
+        return {
+          currency,
+          count,
+          hasBoth: inflow > 0 && outflow > 0,
+          inflowLabel: formatMoney(inflow, currency, this.locale),
+          outflowLabel: formatMoney(outflow, currency, this.locale),
+          netLabel: `${sign}${formatMoney(Math.abs(net), currency, this.locale)}`,
+          netClass:
+            net > 0
+              ? 'text-emerald-600 dark:text-emerald-400'
+              : net < 0
+                ? 'text-red-600 dark:text-red-400'
+                : 'text-muted-foreground',
+        };
+      });
   });
 
   protected readonly totalPages = computed(() =>
