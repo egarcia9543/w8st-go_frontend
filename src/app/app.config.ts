@@ -23,6 +23,8 @@ import { TransactionsRepository } from './domain/repositories/transactions/trans
 import { TransactionRepositoryImp } from './infrastructure/repositories/transactions/transaction.repository.imp';
 import { AnalyticsRepository } from './domain/repositories/analytics/analytics.repository';
 import { AnalyticsRepositoryImp } from './infrastructure/repositories/analytics/analytics.repository.imp';
+import { CardsRepository } from './domain/repositories/cards/cards.repository';
+import { CardsRepositoryImp } from './infrastructure/repositories/cards/cards.repository.imp';
 import { registerLocaleData } from '@angular/common';
 import localeEsCo from '@angular/common/locales/es-CO';
 registerLocaleData(localeEsCo);
@@ -47,5 +49,6 @@ export const appConfig: ApplicationConfig = {
     { provide: AuthRepository, useClass: AuthRepositoryImp },
     { provide: TransactionsRepository, useClass: TransactionRepositoryImp },
     { provide: AnalyticsRepository, useClass: AnalyticsRepositoryImp },
+    { provide: CardsRepository, useClass: CardsRepositoryImp },
   ],
 };

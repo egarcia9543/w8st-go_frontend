@@ -23,4 +23,10 @@ export class AnalyticsApiDatasource {
     const options = month ? { params: new HttpParams().set('month', month) } : {};
     return this.http.get<CardSpendDto[]>(`${environment.apiUrl}/analytics/by-card`, options);
   }
+
+  getCurrentCycleSpend(): Observable<CardSpendDto[]> {
+    return this.http.get<CardSpendDto[]>(`${environment.apiUrl}/analytics/by-card`, {
+      params: new HttpParams().set('period', 'current'),
+    });
+  }
 }

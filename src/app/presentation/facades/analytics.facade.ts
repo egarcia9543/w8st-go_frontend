@@ -74,4 +74,26 @@ export class AnalyticsFacade {
       error: () => this._cardSpendState.set({ cards: [], loading: false, error: true }),
     });
   }
+
+  readonly upcomingPayments = computed(() =>
+    this._cardSpendState()
+      .cards.filter((card) => card.period?.paymentDueDate)
+      .sort((a, b) => a.period!.paymentDueDate!.localeCompare(b.period!.paymentDueDate!)),
+  );
+
+  private readonly _currentCycleState = signal<CardSpendState>({
+    cards: [],
+    loading: false,
+    error: false,
+  });
+  readonly currentCycleState = this._currentCycleState.asReadonly();
+
+  loadCurrentCycleSpend(): void {
+    this._currentCycleState.set({ cards: [], loading: true, error: false });
+
+    this.getCardSpendUseCase.executeCurrentCycle().subscribe({
+      next: (cards) => this._currentCycleState.set({ cards, loading: false, error: false }),
+      error: () => this._currentCycleState.set({ cards: [], loading: false, error: true }),
+    });
+  }
 }

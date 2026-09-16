@@ -66,6 +66,30 @@
       </div>
     }
 
+    @if (upcomingPayments().length > 0) {
+      <div hlmCard>
+        <div hlmCardHeader>
+          <h3 hlmCardTitle>Próximos pagos</h3>
+          <p hlmCardDescription>
+            Lo facturado a cada tarjeta de crédito en este ciclo, con su fecha límite de pago
+          </p>
+        </div>
+        <div hlmCardContent class="space-y-3">
+          @for (payment of upcomingPayments(); track payment.cardId) {
+            <div class="flex flex-wrap items-baseline justify-between gap-2">
+              <div class="min-w-0">
+                <p class="truncate text-sm font-medium text-foreground">{{ payment.name }}</p>
+                <p class="text-xs" [class]="payment.urgencyClass">{{ payment.dueLabel }}</p>
+              </div>
+              <p class="shrink-0 font-semibold tabular-nums text-foreground">
+                {{ payment.amount }}
+              </p>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
     @if (analyticsFacade.cardSpendState().cards.length > 0) {
       <div class="space-y-3">
         <h3 class="text-base font-semibold text-foreground">Gasto por producto</h3>

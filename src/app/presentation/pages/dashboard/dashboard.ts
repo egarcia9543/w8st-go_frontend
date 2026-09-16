@@ -3,9 +3,11 @@ import { HlmButton } from '@spartan-ng/helm/button';
 import { HlmCardImports } from '@spartan-ng/helm/card';
 import { HlmSkeletonImports } from '@spartan-ng/helm/skeleton';
 import { CardTile } from '../../components/card-tile/card-tile';
+import { cardDisplayName } from '../../components/card-tile/card-art';
 import { SpendingChart } from '../../components/spending-chart/spending-chart';
 import { AnalyticsFacade } from '../../facades/analytics.facade';
 import { formatMoney } from '../../pipes/format-money';
+import { daysUntil, formatDueLabel } from '../../pipes/format-cycle';
 
 interface KpiTile {
   key: string;
@@ -13,6 +15,14 @@ interface KpiTile {
   value: string;
   detail: string;
   valueClass: string;
+}
+
+interface UpcomingPayment {
+  cardId: string;
+  name: string;
+  amount: string;
+  dueLabel: string;
+  urgencyClass: string;
 }
 
 @Component({
@@ -82,6 +92,26 @@ export class Dashboard {
       },
     ];
   });
+
+  protected readonly upcomingPayments = computed<UpcomingPayment[]>(() =>
+    this.analyticsFacade.upcomingPayments().map((card) => {
+      const dueDate = card.period!.paymentDueDate!;
+      const days = daysUntil(dueDate);
+
+      return {
+        cardId: card.cardId,
+        name: cardDisplayName(card.kind, card.last4, card.alias),
+        amount: formatMoney(card.total, card.currency, this.locale),
+        dueLabel: formatDueLabel(dueDate, this.locale),
+        urgencyClass:
+          days < 0
+            ? 'text-red-600 dark:text-red-400'
+            : days <= 5
+              ? 'text-amber-600 dark:text-amber-400'
+              : 'text-muted-foreground',
+      };
+    }),
+  );
 
   constructor() {
     this.analyticsFacade.loadAnalytics();

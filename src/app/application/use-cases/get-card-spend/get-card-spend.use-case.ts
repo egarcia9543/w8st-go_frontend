@@ -10,4 +10,8 @@ export class GetCardSpendUseCase {
   execute(month?: string): Observable<CardSpend[]> {
     return this.analyticsRepository.getCardSpend(month);
   }
+
+  executeCurrentCycle(): Observable<CardSpend[]> {
+    return this.analyticsRepository.getCurrentCycleSpend();
+  }
 }

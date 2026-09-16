@@ -1,23 +1,8 @@
 import { Component, computed, inject, input, LOCALE_ID } from '@angular/core';
-import { CardSpend } from '../../../domain/entities/card-spend.entity';
-import { CardKind } from '../../../domain/entities/transaction.entity';
+import { CardSpend, SpendBasis } from '../../../domain/entities/card-spend.entity';
 import { formatMoney } from '../../pipes/format-money';
-
-const KIND_LABELS: Record<string, string> = {
-  [CardKind.CREDIT]: 'Crédito',
-  [CardKind.DEBIT]: 'Débito',
-  [CardKind.ACCOUNT]: 'Cuenta',
-};
-
-const DEBIT_ART = 'imgs/DEBIT.png';
-const AMEX_ART = 'imgs/AMEX.webp';
-const MASTERCARD_ART = 'imgs/MC.webp';
-
-const artFor = (kind: CardKind, alias?: string): string => {
-  if (kind === CardKind.DEBIT || kind === CardKind.ACCOUNT) return DEBIT_ART;
-  if (alias && /american\s*express|amex/i.test(alias)) return AMEX_ART;
-  return MASTERCARD_ART;
-};
+import { formatCycleRange, formatDueLabel } from '../../pipes/format-cycle';
+import { cardArtFor, cardDisplayName } from './card-art';
 
 @Component({
   selector: 'app-card-tile',
@@ -30,14 +15,36 @@ export class CardTile {
 
   protected readonly name = computed(() => {
     const card = this.card();
-    return card.alias ?? `${KIND_LABELS[card.kind]} *${card.last4}`;
+    return cardDisplayName(card.kind, card.last4, card.alias);
   });
 
-  protected readonly art = computed(() => artFor(this.card().kind, this.card().alias));
+  protected readonly art = computed(() => cardArtFor(this.card().kind, this.card().alias));
 
   protected readonly total = computed(() => {
     const card = this.card();
     return formatMoney(card.total, card.currency, this.locale);
+  });
+
+  private readonly cycle = computed(() => {
+    const period = this.card().period;
+    return period?.basis === SpendBasis.CYCLE && period.closesOn ? period : null;
+  });
+
+  protected readonly periodLabel = computed(() => {
+    const cycle = this.cycle();
+    if (!cycle) return 'Gasto del mes';
+
+    return `Ciclo · ${formatCycleRange(cycle.from, cycle.closesOn!, this.locale)}`;
+  });
+
+  protected readonly dueLabel = computed(() => {
+    const dueDate = this.cycle()?.paymentDueDate;
+    return dueDate ? formatDueLabel(dueDate, this.locale) : null;
+  });
+
+  protected readonly utilizationPercent = computed(() => {
+    const utilization = this.card().utilization;
+    return utilization === undefined ? null : Math.round(utilization * 100);
   });
 
   protected readonly detail = computed(() => {

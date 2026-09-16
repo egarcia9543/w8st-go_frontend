@@ -1,0 +1,311 @@
+<section class="mx-auto max-w-5xl space-y-6 p-6">
+  <div class="space-y-1">
+    <h2 class="text-xl font-bold text-foreground">Tarjetas de crédito</h2>
+    <p class="max-w-2xl text-sm text-muted-foreground">
+      El día de corte define el ciclo de facturación: una compra hecha después del corte se cobra en
+      el ciclo siguiente. Configúralo aquí para que el gasto se agrupe como en tu extracto y no por
+      mes calendario.
+    </p>
+  </div>
+
+  @if (saveError()) {
+    <div class="rounded-lg bg-destructive/10 p-4">
+      <p class="text-sm text-destructive">{{ saveError() }}</p>
+    </div>
+  }
+
+  @if (cardsFacade.cardsState().loading) {
+    <div class="space-y-4">
+      @for (i of skeletonItems; track i) {
+        <div hlmCard class="gap-4 p-5">
+          <div class="flex gap-4">
+            <div hlmSkeleton class="h-24 w-40 shrink-0 rounded-lg"></div>
+            <div class="flex-1 space-y-3">
+              <div hlmSkeleton class="h-5 w-40"></div>
+              <div hlmSkeleton class="h-4 w-56"></div>
+              <div hlmSkeleton class="h-4 w-32"></div>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  } @else if (cardsFacade.cardsState().error) {
+    <div class="rounded-lg bg-destructive/10 p-4 text-center">
+      <p class="text-sm text-destructive">No se pudieron cargar las tarjetas.</p>
+      <button hlmBtn variant="outline" class="mt-3 cursor-pointer" (click)="retry()">
+        Reintentar
+      </button>
+    </div>
+  } @else if (views().length === 0) {
+    <div hlmCard class="p-8 text-center">
+      <p class="text-muted-foreground">Todavía no se ha detectado ninguna tarjeta de crédito.</p>
+      <p class="mt-1 text-sm text-muted-foreground">
+        Las tarjetas aparecen solas al sincronizar los correos del banco.
+      </p>
+    </div>
+  } @else {
+    @if (pendingSetupCount() > 0) {
+      <div class="flex items-start gap-3 rounded-lg bg-amber-500/10 p-4">
+        <ng-icon name="lucideTriangleAlert" class="mt-0.5 shrink-0 text-amber-600" />
+        <p class="text-sm text-amber-700 dark:text-amber-400">
+          {{ pendingSetupCount() === 1 ? 'Hay 1 tarjeta sin' : 'Hay ' + pendingSetupCount() + ' tarjetas sin' }}
+          día de corte. Mientras tanto su gasto se sigue agrupando por mes calendario.
+        </p>
+      </div>
+    }
+
+    <div class="space-y-4">
+      @for (view of views(); track view.id) {
+        <div hlmCard class="gap-4 p-5">
+          <div class="flex flex-col gap-5 sm:flex-row">
+            <img
+              [src]="view.art"
+              [alt]="view.name"
+              class="h-28 w-44 shrink-0 self-start rounded-lg object-cover shadow-md"
+              loading="lazy"
+            />
+
+            <div class="min-w-0 flex-1 space-y-4">
+              <div class="flex flex-wrap items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <h3 hlmCardTitle class="truncate">{{ view.name }}</h3>
+                  <p class="text-sm text-muted-foreground">
+                    <span class="font-mono tracking-[0.18em]">•••• {{ view.last4 }}</span>
+                    @if (view.issuer) {
+                      <span> · {{ view.issuer }}</span>
+                    }
+                  </p>
+                </div>
+
+                <div class="flex shrink-0 gap-2">
+                  <button
+                    hlmBtn
+                    variant="outline"
+                    size="sm"
+                    class="cursor-pointer"
+                    [disabled]="cardsFacade.savingCardId() === view.id"
+                    (click)="startEditing(view.card)"
+                  >
+                    <ng-icon name="lucidePencil" class="mr-1.5" />
+                    Editar
+                  </button>
+                  <button
+                    hlmBtn
+                    variant="ghost"
+                    size="sm"
+                    class="cursor-pointer"
+                    [disabled]="cardsFacade.savingCardId() === view.id"
+                    (click)="toggleArchived(view.card)"
+                  >
+                    <ng-icon name="lucideArchive" />
+                    <span class="sr-only">Archivar</span>
+                  </button>
+                </div>
+              </div>
+
+              @if (view.needsSetup) {
+                <p class="text-sm text-muted-foreground">
+                  Sin día de corte configurado. Su gasto se agrupa por mes calendario.
+                </p>
+              } @else {
+                <div class="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <p class="text-[11px] tracking-wide text-muted-foreground uppercase">
+                      Ciclo abierto
+                    </p>
+                    <p class="font-semibold text-foreground">{{ view.cycleRange }}</p>
+                    <p class="text-sm text-muted-foreground">
+                      {{ view.spendLabel }} · {{ view.movements }}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p class="text-[11px] tracking-wide text-muted-foreground uppercase">
+                      Límite de pago
+                    </p>
+                    @if (view.dueDate) {
+                      <p class="font-semibold text-foreground">{{ view.dueDate }}</p>
+                      <p class="text-sm text-muted-foreground">{{ view.dueLabel }}</p>
+                    } @else {
+                      <p class="text-sm text-muted-foreground">
+                        Falta configurar los días de gracia.
+                      </p>
+                    }
+                  </div>
+                </div>
+
+                @if (view.utilizationPercent !== null) {
+                  <div class="space-y-1.5">
+                    <div class="flex items-baseline justify-between text-sm">
+                      <span class="text-muted-foreground">Utilización del cupo</span>
+                      <span class="font-semibold text-foreground">
+                        {{ view.utilizationPercent }}% de {{ view.limitLabel }}
+                      </span>
+                    </div>
+                    <div class="h-2 overflow-hidden rounded-full bg-muted">
+                      <div
+                        class="h-full rounded-full transition-[width]"
+                        [class]="
+                          view.utilizationPercent >= 80
+                            ? 'bg-red-500'
+                            : view.utilizationPercent >= 50
+                              ? 'bg-amber-500'
+                              : 'bg-emerald-500'
+                        "
+                        [style.width.%]="
+                          view.utilizationPercent > 100 ? 100 : view.utilizationPercent
+                        "
+                      ></div>
+                    </div>
+                  </div>
+                }
+
+                <div class="flex flex-wrap gap-x-6 gap-y-1 text-xs text-muted-foreground">
+                  <span>Corte: {{ view.cutoffLabel }}</span>
+                  @if (view.graceLabel) {
+                    <span>Pago: {{ view.graceLabel }}</span>
+                  }
+                  @if (view.limitLabel) {
+                    <span>Cupo: {{ view.limitLabel }}</span>
+                  }
+                </div>
+              }
+
+              @if (editingId() === view.id) {
+                <form
+                  [formGroup]="form"
+                  (ngSubmit)="save()"
+                  class="space-y-4 rounded-lg border border-border bg-muted/30 p-4"
+                >
+                  <div class="grid gap-4 sm:grid-cols-2">
+                    <label class="space-y-1.5">
+                      <span class="text-sm font-medium text-foreground">Alias</span>
+                      <input
+                        hlmInput
+                        type="text"
+                        formControlName="alias"
+                        placeholder="Amex Gold, Mastercard viajes…"
+                      />
+                    </label>
+
+                    <label class="space-y-1.5">
+                      <span class="text-sm font-medium text-foreground">Emisor</span>
+                      <input hlmInput type="text" formControlName="issuer" placeholder="Bancolombia" />
+                    </label>
+
+                    <label class="space-y-1.5">
+                      <span class="text-sm font-medium text-foreground">Día de corte</span>
+                      <input
+                        hlmInput
+                        type="number"
+                        formControlName="cutoffDay"
+                        [min]="1"
+                        [max]="31"
+                        placeholder="15"
+                      />
+                      <span class="block text-xs text-muted-foreground">
+                        Día del mes en que cierra el ciclo ({{ cutoffRange }}).
+                      </span>
+                    </label>
+
+                    <label class="space-y-1.5">
+                      <span class="text-sm font-medium text-foreground">Días de gracia</span>
+                      <input
+                        hlmInput
+                        type="number"
+                        formControlName="paymentGraceDays"
+                        [min]="0"
+                        [max]="60"
+                        placeholder="18"
+                      />
+                      <span class="block text-xs text-muted-foreground">
+                        Días entre el corte y el límite de pago ({{ graceRange }}).
+                      </span>
+                    </label>
+
+                    <label class="space-y-1.5 sm:col-span-2">
+                      <span class="text-sm font-medium text-foreground">Cupo aprobado</span>
+                      <input
+                        hlmInput
+                        type="number"
+                        formControlName="creditLimit"
+                        [min]="0"
+                        placeholder="5000000"
+                      />
+                      <span class="block text-xs text-muted-foreground">
+                        Opcional. Se usa para calcular el porcentaje de utilización.
+                      </span>
+                    </label>
+                  </div>
+
+                  <div class="flex justify-end gap-2">
+                    <button
+                      hlmBtn
+                      type="button"
+                      variant="ghost"
+                      class="cursor-pointer"
+                      (click)="cancelEditing()"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      hlmBtn
+                      type="submit"
+                      class="cursor-pointer"
+                      [disabled]="cardsFacade.savingCardId() === view.id"
+                    >
+                      {{ cardsFacade.savingCardId() === view.id ? 'Guardando…' : 'Guardar' }}
+                    </button>
+                  </div>
+                </form>
+              }
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  @if (archivedViews().length > 0) {
+    <div class="space-y-3">
+      <button
+        hlmBtn
+        variant="ghost"
+        size="sm"
+        class="cursor-pointer"
+        (click)="showArchived.set(!showArchived())"
+      >
+        {{ showArchived() ? 'Ocultar' : 'Ver' }} archivadas ({{ archivedViews().length }})
+      </button>
+
+      @if (showArchived()) {
+        <div class="space-y-2">
+          @for (view of archivedViews(); track view.id) {
+            <div
+              hlmCard
+              class="flex flex-row items-center justify-between gap-3 p-4 opacity-70"
+            >
+              <div class="min-w-0">
+                <p class="truncate text-sm font-medium text-foreground">{{ view.name }}</p>
+                <p class="font-mono text-xs tracking-[0.18em] text-muted-foreground">
+                  •••• {{ view.last4 }}
+                </p>
+              </div>
+              <button
+                hlmBtn
+                variant="outline"
+                size="sm"
+                class="shrink-0 cursor-pointer"
+                [disabled]="cardsFacade.savingCardId() === view.id"
+                (click)="toggleArchived(view.card)"
+              >
+                <ng-icon name="lucideArchiveRestore" class="mr-1.5" />
+                Restaurar
+              </button>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+</section>

@@ -22,4 +22,10 @@ export class AnalyticsRepositoryImp implements AnalyticsRepository {
       .getCardSpend(month)
       .pipe(map((dtos) => CardSpendMapper.toDomainList(dtos)));
   }
+
+  getCurrentCycleSpend(): Observable<CardSpend[]> {
+    return this.analyticsDatasource
+      .getCurrentCycleSpend()
+      .pipe(map((dtos) => CardSpendMapper.toDomainList(dtos)));
+  }
 }

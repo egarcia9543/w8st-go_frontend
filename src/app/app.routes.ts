@@ -26,6 +26,11 @@ export const routes: Routes = [
           import('./presentation/pages/transactions/transactions').then((m) => m.Transactions),
         canActivate: [authGuard],
       },
+      {
+        path: 'tarjetas',
+        loadComponent: () => import('./presentation/pages/cards/cards').then((m) => m.Cards),
+        canActivate: [authGuard],
+      },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
     ],
   },
