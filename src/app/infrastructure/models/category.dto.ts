@@ -18,6 +18,23 @@ export interface BudgetGroupDto {
   categories: CategoryDto[];
 }
 
+export interface SaveCategoryDto {
+  name?: string;
+  color?: string;
+  groupId?: string | null;
+  monthlyLimit?: number | null;
+  archived?: boolean;
+}
+
+export interface SaveBudgetGroupDto {
+  name?: string;
+  kind?: string;
+  targetPercent?: number;
+  color?: string;
+}
+
+export type BudgetGroupSettingsDto = Omit<BudgetGroupDto, 'categories'>;
+
 export interface CategoryCatalogDto {
   groups: BudgetGroupDto[];
   ungrouped: CategoryDto[];

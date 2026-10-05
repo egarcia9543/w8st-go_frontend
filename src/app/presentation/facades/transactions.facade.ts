@@ -6,6 +6,7 @@ import { SyncTransactionsUseCase } from '../../application/use-cases/sync-transa
 import { SyncResult } from '../../domain/entities/sync.entity';
 import { CategorizeTransactionsUseCase } from '../../application/use-cases/categorize-transactions/categorize-transactions.use-case';
 import { GetUncategorizedCountUseCase } from '../../application/use-cases/get-uncategorized-count/get-uncategorized-count.use-case';
+import { currentBogotaMonth } from '../utils/month';
 
 export interface TransactionsState {
   transactions: Transaction[];
@@ -18,14 +19,6 @@ export interface SyncState {
   result: SyncResult | null;
   error: boolean;
 }
-
-const bogotaMonthFormatter = new Intl.DateTimeFormat('en-CA', {
-  timeZone: 'America/Bogota',
-  year: 'numeric',
-  month: '2-digit',
-});
-
-export const currentBogotaMonth = (): string => bogotaMonthFormatter.format(new Date());
 
 @Injectable({ providedIn: 'root' })
 export class TransactionsFacade {

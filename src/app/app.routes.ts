@@ -27,6 +27,19 @@ export const routes: Routes = [
         canActivate: [authGuard],
       },
       {
+        path: 'presupuesto',
+        loadComponent: () => import('./presentation/pages/budget/budget').then((m) => m.Budget),
+        canActivate: [authGuard],
+      },
+      {
+        path: 'presupuesto/ajustes',
+        loadComponent: () =>
+          import('./presentation/pages/budget-settings/budget-settings').then(
+            (m) => m.BudgetSettings,
+          ),
+        canActivate: [authGuard],
+      },
+      {
         path: 'tarjetas',
         loadComponent: () => import('./presentation/pages/cards/cards').then((m) => m.Cards),
         canActivate: [authGuard],

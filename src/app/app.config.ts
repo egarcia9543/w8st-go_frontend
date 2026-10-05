@@ -29,6 +29,8 @@ import { WishlistRepository } from './domain/repositories/wishlist/wishlist.repo
 import { WishlistRepositoryImp } from './infrastructure/repositories/wishlist/wishlist.repository.imp';
 import { CategoriesRepository } from './domain/repositories/categories/categories.repository';
 import { CategoriesRepositoryImp } from './infrastructure/repositories/categories/categories.repository.imp';
+import { BudgetRepository } from './domain/repositories/budget/budget.repository';
+import { BudgetRepositoryImp } from './infrastructure/repositories/budget/budget.repository.imp';
 import { registerLocaleData } from '@angular/common';
 import localeEsCo from '@angular/common/locales/es-CO';
 registerLocaleData(localeEsCo);
@@ -56,5 +58,6 @@ export const appConfig: ApplicationConfig = {
     { provide: CardsRepository, useClass: CardsRepositoryImp },
     { provide: WishlistRepository, useClass: WishlistRepositoryImp },
     { provide: CategoriesRepository, useClass: CategoriesRepositoryImp },
+    { provide: BudgetRepository, useClass: BudgetRepositoryImp },
   ],
 };

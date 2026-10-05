@@ -8,7 +8,7 @@ import { HlmSelectImports } from '@spartan-ng/helm/select';
 import { HlmTableImports } from '@spartan-ng/helm/table';
 import { HlmSkeletonImports } from '@spartan-ng/helm/skeleton';
 import { NgIcon, provideIcons } from '@ng-icons/core';
-import { lucideCalendar } from '@ng-icons/lucide';
+import { lucideCalendar, lucideChevronLeft, lucideChevronRight } from '@ng-icons/lucide';
 import { map } from 'rxjs';
 import {
   CardKind,
@@ -24,6 +24,7 @@ import { CategoriesFacade } from '../../facades/categories.facade';
 import { TransactionsFacade } from '../../facades/transactions.facade';
 import { formatMoney } from '../../pipes/format-money';
 import { SignedAmountPipe } from '../../pipes/signed-amount.pipe';
+import { currentBogotaMonth, MONTH_PATTERN, shiftMonth } from '../../utils/month';
 
 type DirectionFilter = 'all' | Direction;
 type SourceFilter = 'all' | FundingSource;
@@ -65,7 +66,7 @@ interface CurrencyTotal {
   ],
   templateUrl: './transactions.html',
   styleUrl: './transactions.scss',
-  providers: [provideIcons({ lucideCalendar })],
+  providers: [provideIcons({ lucideCalendar, lucideChevronLeft, lucideChevronRight })],
 })
 export class Transactions {
   protected readonly transactionsFacade = inject(TransactionsFacade);
@@ -95,10 +96,14 @@ export class Transactions {
 
   protected readonly monthLabel = computed(() => {
     const d = this.selectedDate();
-    if (!d) return 'Todos los meses';
+    if (!d) return '';
     const label = d.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' });
     return label.charAt(0).toUpperCase() + label.slice(1);
   });
+
+  protected readonly isLatestMonth = computed(
+    () => (this.month() ?? '') >= currentBogotaMonth(),
+  );
 
   protected readonly skeletonRows = [0, 1, 2, 3, 4];
   protected readonly pageSizes = [10, 20, 50] as const;
@@ -110,8 +115,15 @@ export class Transactions {
   protected readonly categoryFilter = signal<string>(CATEGORY_FILTER_ALL);
   protected readonly selectedIds = signal<ReadonlySet<string>>(new Set());
 
+  protected readonly activeCategoryIds = computed(
+    () =>
+      new Set(
+        this.categoryGroups().flatMap((group) => group.categories.map((category) => category.id)),
+      ),
+  );
+
   protected readonly categoryGroups = computed<CategoryOptionGroup[]>(() => {
-    const catalog = this.categoriesFacade.state().catalog;
+    const catalog = this.categoriesFacade.activeCatalog();
     if (!catalog) return [];
 
     const groups = catalog.groups
@@ -269,9 +281,26 @@ export class Transactions {
     this.categoriesFacade.ensureLoaded();
 
     this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe((p) => {
+      const month = p.get('month');
+      if (!month || !MONTH_PATTERN.test(month)) {
+        this.onMonthChange(currentBogotaMonth(), true);
+        return;
+      }
+
       this.clearSelection();
-      this.transactionsFacade.loadTransactions(p.get('month') ?? undefined);
+      if (p.get('pendientes') === '1') this.showPending();
+      this.transactionsFacade.loadTransactions(month);
     });
+  }
+
+  previousMonth(): void {
+    const month = this.month();
+    if (month) this.onMonthChange(shiftMonth(month, -1));
+  }
+
+  nextMonth(): void {
+    const month = this.month();
+    if (month && !this.isLatestMonth()) this.onMonthChange(shiftMonth(month, 1));
   }
 
   onCategoryChange(tx: Transaction, categoryId: string): void {
@@ -332,19 +361,22 @@ export class Transactions {
     return category ? { id: category.id, name: category.name, color: category.color } : null;
   }
 
-  onMonthChange(month: string): void {
+  onMonthChange(month: string, replaceUrl = false): void {
     this.router.navigate([], {
       relativeTo: this.route,
-      queryParams: { month: month || null },
+      queryParams: { month },
       queryParamsHandling: 'merge',
+      replaceUrl,
     });
   }
 
   onDateSelected(date: Date): void {
     const year = date.getFullYear();
     const monthNumber = String(date.getMonth() + 1).padStart(2, '0');
+    const selected = `${year}-${monthNumber}`;
+    const current = currentBogotaMonth();
     this.datePickerOpen.set(false);
-    this.onMonthChange(`${year}-${monthNumber}`);
+    this.onMonthChange(selected > current ? current : selected);
   }
 
   setDirectionFilter(filter: DirectionFilter): void {

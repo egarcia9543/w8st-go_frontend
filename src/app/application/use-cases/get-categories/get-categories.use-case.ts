@@ -7,7 +7,7 @@ import { CategoriesRepository } from '../../../domain/repositories/categories/ca
 export class GetCategoriesUseCase {
   private readonly categoriesRepository = inject(CategoriesRepository);
 
-  execute(): Observable<CategoryCatalog> {
-    return this.categoriesRepository.getCatalog();
+  execute(includeArchived = false): Observable<CategoryCatalog> {
+    return this.categoriesRepository.getCatalog(includeArchived);
   }
 }

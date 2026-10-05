@@ -5,6 +5,7 @@ export interface MonthlyAnalyticsDto {
   credit: number;
   income: number;
   internal: number;
+  savings?: number;
   net: number;
   counts: AnalyticsCountsDto;
 }
@@ -14,4 +15,5 @@ export interface AnalyticsCountsDto {
   credit: number;
   income: number;
   internal: number;
+  savings?: number;
 }

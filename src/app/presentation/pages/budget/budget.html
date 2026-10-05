@@ -1,0 +1,229 @@
+<section class="mx-auto max-w-5xl space-y-5 p-6">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <div class="space-y-1">
+      <h1 class="text-2xl font-bold text-foreground">Presupuesto</h1>
+      <p class="text-sm text-muted-foreground">
+        Cuánto de tu ingreso se va en cada cosa, comparado con lo que te propusiste.
+      </p>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <div class="flex items-center rounded-md border border-border">
+        <button
+          hlmBtn
+          variant="ghost"
+          size="icon-sm"
+          class="cursor-pointer"
+          aria-label="Mes anterior"
+          (click)="previousMonth()"
+        >
+          <ng-icon name="lucideChevronLeft" />
+        </button>
+        <span class="min-w-36 px-2 text-center text-sm font-medium text-foreground">
+          {{ monthLabel() }}
+        </span>
+        <button
+          hlmBtn
+          variant="ghost"
+          size="icon-sm"
+          class="cursor-pointer"
+          aria-label="Mes siguiente"
+          [disabled]="isLatestMonth()"
+          (click)="nextMonth()"
+        >
+          <ng-icon name="lucideChevronRight" />
+        </button>
+      </div>
+
+      <a hlmBtn variant="outline" size="sm" routerLink="ajustes">
+        <ng-icon name="lucideSettings" class="mr-1.5" />
+        Ajustes
+      </a>
+    </div>
+  </div>
+
+  @if (budgetFacade.state().loading && !summary()) {
+    <div class="space-y-4">
+      @for (i of skeletonItems; track i) {
+        <div hlmCard class="space-y-3 p-5">
+          <div hlmSkeleton class="h-5 w-40"></div>
+          <div hlmSkeleton class="h-2 w-full"></div>
+          <div hlmSkeleton class="h-2 w-2/3"></div>
+        </div>
+      }
+    </div>
+  } @else if (budgetFacade.state().error) {
+    <div class="rounded-lg bg-destructive/10 p-4 text-center">
+      <p class="text-sm text-destructive">No se pudo cargar el presupuesto.</p>
+      <button hlmBtn variant="outline" class="mt-3 cursor-pointer" (click)="budgetFacade.loadSummary()">
+        Reintentar
+      </button>
+    </div>
+  } @else if (summary(); as summary) {
+    @if (uncategorizedView(); as pending) {
+      <a
+        class="flex items-start gap-3 rounded-lg bg-amber-500/10 p-4 transition-colors hover:bg-amber-500/15"
+        routerLink="/transacciones"
+        [queryParams]="{ month: summary.month, pendientes: 1 }"
+      >
+        <ng-icon name="lucideTriangleAlert" class="mt-0.5 shrink-0 text-amber-600" />
+        <div class="text-sm text-amber-700 dark:text-amber-400">
+          <p class="font-medium">{{ pending.text }}.</p>
+          <p>Mientras existan, los porcentajes de abajo están incompletos. Clasifícalos aquí.</p>
+        </div>
+      </a>
+    }
+
+    <div hlmCard class="gap-5 p-5" [class.opacity-60]="budgetFacade.state().loading">
+      <div class="flex flex-wrap items-baseline justify-between gap-2">
+        @if (incomeLabel()) {
+          <div>
+            <p class="text-[11px] tracking-wide text-muted-foreground uppercase">
+              Ingreso de referencia
+            </p>
+            <p class="text-xl font-bold text-foreground tabular-nums">{{ incomeLabel() }}</p>
+            <p class="text-xs text-muted-foreground">{{ incomeSinceLabel() }}</p>
+          </div>
+        }
+        <p class="text-sm text-muted-foreground">{{ progressLabel() }}</p>
+      </div>
+
+      @if (!incomeLabel()) {
+        <div class="space-y-3 rounded-lg border border-dashed border-border p-4">
+          <div>
+            <p class="font-medium text-foreground">Define tu ingreso de referencia</p>
+            <p class="text-sm text-muted-foreground">
+              Es contra lo que se calculan los porcentajes. Ponlo a mano: tu salario mensual, por
+              ejemplo. Se aplica desde {{ monthLabel().toLowerCase() }} y lo puedes cambiar cuando
+              quieras en Ajustes.
+            </p>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <input
+              hlmInput
+              type="number"
+              min="1"
+              class="w-48"
+              placeholder="4500000"
+              [formControl]="incomeAmount"
+              (keydown.enter)="saveIncome()"
+            />
+            <button
+              hlmBtn
+              class="cursor-pointer"
+              [disabled]="budgetFacade.savingIncome()"
+              (click)="saveIncome()"
+            >
+              {{ budgetFacade.savingIncome() ? 'Guardando…' : 'Guardar' }}
+            </button>
+          </div>
+        </div>
+      }
+
+      <div class="space-y-4">
+        @for (group of groupViews(); track group.id) {
+          <div class="space-y-1.5">
+            <div class="flex flex-wrap items-baseline justify-between gap-2 text-sm">
+              <span class="flex items-center gap-2 font-medium text-foreground">
+                <span class="h-2.5 w-2.5 rounded-full" [style.background-color]="group.color"></span>
+                {{ group.name }}
+                @if (group.status.label) {
+                  <span class="rounded-full px-2 py-0.5 text-[11px] font-medium" [class]="group.status.badgeClass">
+                    {{ group.status.label }}
+                  </span>
+                }
+              </span>
+              <span class="text-muted-foreground tabular-nums">
+                <span class="font-semibold text-foreground">{{ group.spentLabel }}</span>
+                · {{ group.shareLabel }}
+              </span>
+            </div>
+            <app-budget-bar
+              size="lg"
+              [fill]="group.fill"
+              [barClass]="group.status.barClass"
+              [marker]="group.marker"
+            />
+          </div>
+        }
+
+        @if (unassignedView(); as unassigned) {
+          <div class="flex items-baseline justify-between border-t border-border pt-3 text-sm">
+            <span class="text-muted-foreground">Sin asignar (ni gastado ni ahorrado)</span>
+            <span
+              class="font-semibold tabular-nums"
+              [class]="unassigned.negative ? 'text-red-600 dark:text-red-400' : 'text-foreground'"
+            >
+              {{ unassigned.label }} · {{ unassigned.percent }}
+            </span>
+          </div>
+        }
+      </div>
+    </div>
+
+    @for (group of groupViews(); track group.id) {
+      @if (group.categories.length > 0) {
+        <div hlmCard class="gap-4 p-5" [class.opacity-60]="budgetFacade.state().loading">
+          <div class="flex items-baseline justify-between gap-2">
+            <h2 class="font-semibold text-foreground">{{ group.name }}</h2>
+            <span class="text-xs text-muted-foreground">
+              {{ group.isSavings ? 'Metas de ahorro' : 'Límites de gasto' }}
+            </span>
+          </div>
+
+          <div class="space-y-4">
+            @for (category of group.categories; track category.id) {
+              <ng-container
+                [ngTemplateOutlet]="categoryRow"
+                [ngTemplateOutletContext]="{ $implicit: category }"
+              />
+            }
+          </div>
+        </div>
+      }
+    }
+
+    @if (ungroupedViews().length > 0) {
+      <div hlmCard class="gap-4 p-5">
+        <h2 class="font-semibold text-foreground">Sin grupo</h2>
+        <div class="space-y-4">
+          @for (category of ungroupedViews(); track category.id) {
+            <ng-container
+              [ngTemplateOutlet]="categoryRow"
+              [ngTemplateOutletContext]="{ $implicit: category }"
+            />
+          }
+        </div>
+      </div>
+    }
+
+    @if (foreignLabel()) {
+      <p class="text-sm text-muted-foreground">
+        Además: {{ foreignLabel() }}. Las compras en otra moneda no suman al presupuesto.
+      </p>
+    }
+  }
+</section>
+
+<ng-template #categoryRow let-category>
+  <div class="space-y-1.5">
+    <div class="flex flex-wrap items-baseline justify-between gap-2 text-sm">
+      <span class="flex items-center gap-2 text-foreground">
+        <span class="h-2.5 w-2.5 rounded-full" [style.background-color]="category.color"></span>
+        {{ category.name }}
+        @if (category.status.label) {
+          <span class="rounded-full px-2 py-0.5 text-[11px] font-medium" [class]="category.status.badgeClass">
+            {{ category.status.label }}
+          </span>
+        }
+      </span>
+      <span class="font-semibold text-foreground tabular-nums">{{ category.amountLabel }}</span>
+    </div>
+    <app-budget-bar
+      [fill]="category.fill"
+      [barClass]="category.status.barClass"
+      [marker]="category.marker"
+    />
+    <p class="text-xs text-muted-foreground">{{ category.detail }}</p>
+  </div>
+</ng-template>

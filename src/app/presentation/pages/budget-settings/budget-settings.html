@@ -1,0 +1,357 @@
+<section class="mx-auto max-w-4xl space-y-6 p-6">
+  <div class="space-y-1">
+    <a
+      routerLink="/presupuesto"
+      class="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+    >
+      <ng-icon name="lucideArrowLeft" />
+      Presupuesto
+    </a>
+    <h1 class="text-2xl font-bold text-foreground">Ajustes del presupuesto</h1>
+  </div>
+
+  @if (error()) {
+    <div class="rounded-lg bg-destructive/10 p-4">
+      <p class="text-sm text-destructive">{{ error() }}</p>
+    </div>
+  }
+
+  <div hlmCard class="gap-4 p-5">
+    <div class="space-y-1">
+      <h2 class="font-semibold text-foreground">Ingreso de referencia</h2>
+      <p class="text-sm text-muted-foreground">
+        Contra este valor se calculan los porcentajes. Cuando cambie (un aumento, otro trabajo),
+        registra el nuevo desde el mes en que aplica: los meses anteriores conservan el valor que
+        tenían.
+      </p>
+    </div>
+
+    <form [formGroup]="incomeForm" (ngSubmit)="saveIncome()" class="flex flex-wrap items-end gap-3">
+      <label class="space-y-1.5">
+        <span class="block text-sm font-medium text-foreground">Desde</span>
+        <input hlmInput type="month" formControlName="effectiveFrom" class="w-44" />
+      </label>
+      <label class="space-y-1.5">
+        <span class="block text-sm font-medium text-foreground">Monto mensual (COP)</span>
+        <input hlmInput type="number" min="1" formControlName="amount" class="w-48" placeholder="4500000" />
+      </label>
+      <button hlmBtn type="submit" class="cursor-pointer" [disabled]="budgetFacade.savingIncome()">
+        {{ budgetFacade.savingIncome() ? 'Guardando…' : 'Guardar' }}
+      </button>
+    </form>
+
+    @if (budgetFacade.incomes().length > 0) {
+      <ul class="divide-y divide-border rounded-lg border border-border">
+        @for (income of budgetFacade.incomes(); track income.effectiveFrom; let first = $first) {
+          <li class="flex items-center justify-between gap-3 px-4 py-2.5 text-sm">
+            <span class="text-muted-foreground">
+              Desde {{ monthLabel(income.effectiveFrom) }}
+              @if (first) {
+                <span class="ml-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-400">
+                  más reciente
+                </span>
+              }
+            </span>
+            <span class="flex items-center gap-2">
+              <span class="font-semibold text-foreground tabular-nums">{{ money(income.amount) }}</span>
+              <button
+                hlmBtn
+                size="sm"
+                class="cursor-pointer"
+                [variant]="confirmingDelete() === 'income:' + income.effectiveFrom ? 'destructive' : 'ghost'"
+                [disabled]="budgetFacade.savingIncome()"
+                (click)="deleteIncome(income.effectiveFrom)"
+              >
+                @if (confirmingDelete() === 'income:' + income.effectiveFrom) {
+                  ¿Eliminar?
+                } @else {
+                  <ng-icon name="lucideTrash2" />
+                  <span class="sr-only">Eliminar</span>
+                }
+              </button>
+            </span>
+          </li>
+        }
+      </ul>
+    }
+  </div>
+
+  <div hlmCard class="gap-4 p-5">
+    <div class="flex flex-wrap items-start justify-between gap-3">
+      <div class="space-y-1">
+        <h2 class="font-semibold text-foreground">Grupos</h2>
+        <p class="text-sm text-muted-foreground">
+          En los grupos de gasto el porcentaje es un máximo; en los de ahorro, un mínimo.
+        </p>
+      </div>
+      <button
+        hlmBtn
+        variant="outline"
+        size="sm"
+        class="cursor-pointer"
+        [disabled]="editingGroupId() !== null"
+        (click)="startGroupEdit()"
+      >
+        <ng-icon name="lucidePlus" class="mr-1.5" />
+        Agregar grupo
+      </button>
+    </div>
+
+    @if (percentWarning()) {
+      <p class="rounded-lg bg-amber-500/10 px-4 py-2.5 text-sm text-amber-700 dark:text-amber-400">
+        {{ percentWarning() }}
+      </p>
+    }
+
+    <ul class="space-y-2">
+      @for (group of groups(); track group.id) {
+        @if (editingGroupId() === group.id) {
+          <li><ng-container *ngTemplateOutlet="groupEditor" /></li>
+        } @else {
+          <li class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border px-4 py-2.5">
+            <span class="flex items-center gap-2 text-sm">
+              <span class="h-3 w-3 rounded-full" [style.background-color]="group.color"></span>
+              <span class="font-medium text-foreground">{{ group.name }}</span>
+              <span class="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
+                {{ group.kind === kinds.SAVINGS ? 'Ahorro' : 'Gasto' }}
+              </span>
+            </span>
+            <span class="flex items-center gap-1">
+              <span class="mr-2 text-sm font-semibold text-foreground tabular-nums">
+                {{ group.kind === kinds.SAVINGS ? 'mín.' : 'máx.' }} {{ group.targetPercent }}%
+              </span>
+              <button hlmBtn variant="ghost" size="icon-sm" class="cursor-pointer" title="Editar" (click)="startGroupEdit(group)">
+                <ng-icon name="lucidePencil" />
+                <span class="sr-only">Editar</span>
+              </button>
+              <button
+                hlmBtn
+                size="sm"
+                class="cursor-pointer"
+                [variant]="confirmingDelete() === 'group:' + group.id ? 'destructive' : 'ghost'"
+                [title]="'Eliminar (sus categorías quedan sin grupo)'"
+                [disabled]="categoriesFacade.saving()"
+                (click)="deleteGroup(group)"
+              >
+                @if (confirmingDelete() === 'group:' + group.id) {
+                  ¿Eliminar?
+                } @else {
+                  <ng-icon name="lucideTrash2" />
+                  <span class="sr-only">Eliminar</span>
+                }
+              </button>
+            </span>
+          </li>
+        }
+      }
+      @if (editingGroupId() === newId) {
+        <li><ng-container *ngTemplateOutlet="groupEditor" /></li>
+      }
+    </ul>
+  </div>
+
+  <div hlmCard class="gap-4 p-5">
+    <div class="space-y-1">
+      <h2 class="font-semibold text-foreground">Categorías</h2>
+      <p class="text-sm text-muted-foreground">
+        El límite mensual es opcional. En las categorías de ahorro funciona como meta. Archivar una
+        categoría la quita de los selectores, pero las transacciones que ya tenía la conservan.
+      </p>
+    </div>
+
+    @for (section of sections(); track section.id) {
+      <div class="space-y-2">
+        <div class="flex items-center justify-between gap-2">
+          <h3 class="text-sm font-medium text-muted-foreground">{{ section.name }}</h3>
+          <button
+            hlmBtn
+            variant="ghost"
+            size="sm"
+            class="cursor-pointer"
+            [disabled]="editingCategoryId() !== null"
+            (click)="startCategoryEdit(undefined, section.id)"
+          >
+            <ng-icon name="lucidePlus" class="mr-1" />
+            Agregar
+          </button>
+        </div>
+
+        <ul class="space-y-2">
+          @for (category of section.categories; track category.id) {
+            @if (editingCategoryId() === category.id) {
+              <li><ng-container *ngTemplateOutlet="categoryEditor" /></li>
+            } @else {
+              <li class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border px-4 py-2.5">
+                <span class="flex items-center gap-2 text-sm">
+                  <span class="h-3 w-3 rounded-full" [style.background-color]="category.color"></span>
+                  <span class="font-medium text-foreground">{{ category.name }}</span>
+                </span>
+                <span class="flex items-center gap-1">
+                  <span class="mr-2 text-sm text-muted-foreground tabular-nums">
+                    {{ limitLabel(category, section.isSavings) }}
+                  </span>
+                  <button hlmBtn variant="ghost" size="icon-sm" class="cursor-pointer" title="Editar" (click)="startCategoryEdit(category)">
+                    <ng-icon name="lucidePencil" />
+                    <span class="sr-only">Editar</span>
+                  </button>
+                  <button
+                    hlmBtn
+                    variant="ghost"
+                    size="icon-sm"
+                    class="cursor-pointer"
+                    title="Archivar"
+                    [disabled]="categoriesFacade.saving()"
+                    (click)="setArchived(category, true)"
+                  >
+                    <ng-icon name="lucideArchive" />
+                    <span class="sr-only">Archivar</span>
+                  </button>
+                </span>
+              </li>
+            }
+          } @empty {
+            <li class="rounded-lg border border-dashed border-border px-4 py-2.5 text-sm text-muted-foreground">
+              Sin categorías.
+            </li>
+          }
+          @if (editingCategoryId() === newId && newCategorySection() === section.id) {
+            <li><ng-container *ngTemplateOutlet="categoryEditor" /></li>
+          }
+        </ul>
+      </div>
+    }
+
+    @if (archived().length > 0) {
+      <div class="space-y-2">
+        <button hlmBtn variant="ghost" size="sm" class="cursor-pointer" (click)="showArchived.set(!showArchived())">
+          {{ showArchived() ? 'Ocultar' : 'Ver' }} archivadas ({{ archived().length }})
+        </button>
+        @if (showArchived()) {
+          <ul class="space-y-2">
+            @for (category of archived(); track category.id) {
+              <li class="flex items-center justify-between gap-3 rounded-lg border border-border px-4 py-2.5 opacity-70">
+                <span class="flex items-center gap-2 text-sm">
+                  <span class="h-3 w-3 rounded-full" [style.background-color]="category.color"></span>
+                  {{ category.name }}
+                </span>
+                <button
+                  hlmBtn
+                  variant="outline"
+                  size="sm"
+                  class="cursor-pointer"
+                  [disabled]="categoriesFacade.saving()"
+                  (click)="setArchived(category, false)"
+                >
+                  <ng-icon name="lucideArchiveRestore" class="mr-1.5" />
+                  Restaurar
+                </button>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+    }
+  </div>
+</section>
+
+<ng-template #groupEditor>
+  <form
+    [formGroup]="groupForm"
+    (ngSubmit)="saveGroup()"
+    class="space-y-3 rounded-lg border border-border bg-muted/30 p-4"
+  >
+    <div class="grid gap-3 sm:grid-cols-[1fr_auto_auto]">
+      <label class="space-y-1.5">
+        <span class="block text-sm font-medium text-foreground">Nombre</span>
+        <input hlmInput type="text" class="w-full" formControlName="name" placeholder="Deudas" />
+      </label>
+      <label class="space-y-1.5">
+        <span class="block text-sm font-medium text-foreground">Tipo</span>
+        <select
+          formControlName="kind"
+          class="h-9 cursor-pointer rounded-md border border-input bg-background px-2 text-sm text-foreground"
+        >
+          <option [value]="kinds.SPENDING">Gasto (máximo)</option>
+          <option [value]="kinds.SAVINGS">Ahorro (mínimo)</option>
+        </select>
+      </label>
+      <label class="space-y-1.5">
+        <span class="block text-sm font-medium text-foreground">% del ingreso</span>
+        <input hlmInput type="number" min="0" max="100" step="any" class="w-28" formControlName="targetPercent" />
+      </label>
+    </div>
+
+    <div class="flex flex-wrap gap-2">
+      @for (color of colors; track color) {
+        <button
+          type="button"
+          class="h-7 w-7 cursor-pointer rounded-full ring-offset-2 ring-offset-background transition"
+          [class.ring-2]="groupForm.controls.color.value === color"
+          [class.ring-foreground]="groupForm.controls.color.value === color"
+          [style.background-color]="color"
+          [attr.aria-label]="'Color ' + color"
+          (click)="groupForm.controls.color.setValue(color)"
+        ></button>
+      }
+    </div>
+
+    <div class="flex justify-end gap-2">
+      <button hlmBtn type="button" variant="ghost" class="cursor-pointer" (click)="cancelEdit()">Cancelar</button>
+      <button hlmBtn type="submit" class="cursor-pointer" [disabled]="categoriesFacade.saving()">
+        {{ categoriesFacade.saving() ? 'Guardando…' : 'Guardar' }}
+      </button>
+    </div>
+  </form>
+</ng-template>
+
+<ng-template #categoryEditor>
+  <form
+    [formGroup]="categoryForm"
+    (ngSubmit)="saveCategory()"
+    class="space-y-3 rounded-lg border border-border bg-muted/30 p-4"
+  >
+    <div class="grid gap-3 sm:grid-cols-[1fr_auto_auto]">
+      <label class="space-y-1.5">
+        <span class="block text-sm font-medium text-foreground">Nombre</span>
+        <input hlmInput type="text" class="w-full" formControlName="name" placeholder="Mascotas" />
+      </label>
+      <label class="space-y-1.5">
+        <span class="block text-sm font-medium text-foreground">Grupo</span>
+        <select
+          formControlName="groupId"
+          class="h-9 cursor-pointer rounded-md border border-input bg-background px-2 text-sm text-foreground"
+        >
+          @for (group of groups(); track group.id) {
+            <option [value]="group.id">{{ group.name }}</option>
+          }
+          <option value="">Sin grupo</option>
+        </select>
+      </label>
+      <label class="space-y-1.5">
+        <span class="block text-sm font-medium text-foreground">Límite o meta mensual</span>
+        <input hlmInput type="number" min="1" class="w-40" formControlName="monthlyLimit" placeholder="Opcional" />
+      </label>
+    </div>
+
+    <div class="flex flex-wrap gap-2">
+      @for (color of colors; track color) {
+        <button
+          type="button"
+          class="h-7 w-7 cursor-pointer rounded-full ring-offset-2 ring-offset-background transition"
+          [class.ring-2]="categoryForm.controls.color.value === color"
+          [class.ring-foreground]="categoryForm.controls.color.value === color"
+          [style.background-color]="color"
+          [attr.aria-label]="'Color ' + color"
+          (click)="categoryForm.controls.color.setValue(color)"
+        ></button>
+      }
+    </div>
+
+    <div class="flex justify-end gap-2">
+      <button hlmBtn type="button" variant="ghost" class="cursor-pointer" (click)="cancelEdit()">Cancelar</button>
+      <button hlmBtn type="submit" class="cursor-pointer" [disabled]="categoriesFacade.saving()">
+        {{ categoriesFacade.saving() ? 'Guardando…' : 'Guardar' }}
+      </button>
+    </div>
+  </form>
+</ng-template>

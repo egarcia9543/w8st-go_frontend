@@ -82,7 +82,10 @@ export class Dashboard {
         key: 'net',
         label: 'Balance',
         value: `${latest.net > 0 ? '+' : latest.net < 0 ? '−' : ''}${money(Math.abs(latest.net))}`,
-        detail: 'Ingresos menos gastos',
+        detail:
+          latest.savings > 0
+            ? `Incluye ${money(latest.savings)} ahorrados`
+            : 'Ingresos menos gastos',
         valueClass:
           latest.net > 0
             ? 'text-emerald-600 dark:text-emerald-400'

@@ -7,6 +7,7 @@ export interface MonthlyAnalytics {
   credit: number;
   income: number;
   internal: number;
+  savings: number;
   net: number;
   counts: AnalyticsCounts;
 }
@@ -16,4 +17,5 @@ export interface AnalyticsCounts {
   credit: number;
   income: number;
   internal: number;
+  savings: number;
 }

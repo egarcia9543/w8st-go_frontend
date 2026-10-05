@@ -7,6 +7,7 @@ import {
   lucideCalendar,
   lucideCreditCard,
   lucideGift,
+  lucidePiggyBank,
   lucideSearch,
   lucideSettings,
   lucideLogOut,
@@ -36,6 +37,7 @@ interface MenuItem {
       lucideCalendar,
       lucideCreditCard,
       lucideGift,
+      lucidePiggyBank,
       lucideSearch,
       lucideSettings,
       lucideLogOut,
@@ -67,6 +69,11 @@ export class SideMenu {
       icon: 'lucideInbox',
       badge: this.transactionsFacade.uncategorizedCount,
       badgeTooltip: 'gastos de este mes sin clasificar',
+    },
+    {
+      title: 'Presupuesto',
+      url: 'presupuesto',
+      icon: 'lucidePiggyBank',
     },
     {
       title: 'Tarjetas',
