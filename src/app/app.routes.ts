@@ -31,6 +31,12 @@ export const routes: Routes = [
         loadComponent: () => import('./presentation/pages/cards/cards').then((m) => m.Cards),
         canActivate: [authGuard],
       },
+      {
+        path: 'wishlist',
+        loadComponent: () =>
+          import('./presentation/pages/wishlist/wishlist').then((m) => m.Wishlist),
+        canActivate: [authGuard],
+      },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
     ],
   },

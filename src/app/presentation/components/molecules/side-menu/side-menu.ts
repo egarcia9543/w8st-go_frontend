@@ -6,6 +6,7 @@ import {
   lucideInbox,
   lucideCalendar,
   lucideCreditCard,
+  lucideGift,
   lucideSearch,
   lucideSettings,
   lucideLogOut,
@@ -25,6 +26,7 @@ import { AuthFacade } from '../../../facades/auth.facade';
       lucideInbox,
       lucideCalendar,
       lucideCreditCard,
+      lucideGift,
       lucideSearch,
       lucideSettings,
       lucideLogOut,
@@ -58,6 +60,11 @@ export class SideMenu {
       title: 'Tarjetas',
       url: 'tarjetas',
       icon: 'lucideCreditCard',
+    },
+    {
+      title: 'Wishlist',
+      url: 'wishlist',
+      icon: 'lucideGift',
     },
   ];
 

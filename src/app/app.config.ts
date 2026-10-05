@@ -25,6 +25,8 @@ import { AnalyticsRepository } from './domain/repositories/analytics/analytics.r
 import { AnalyticsRepositoryImp } from './infrastructure/repositories/analytics/analytics.repository.imp';
 import { CardsRepository } from './domain/repositories/cards/cards.repository';
 import { CardsRepositoryImp } from './infrastructure/repositories/cards/cards.repository.imp';
+import { WishlistRepository } from './domain/repositories/wishlist/wishlist.repository';
+import { WishlistRepositoryImp } from './infrastructure/repositories/wishlist/wishlist.repository.imp';
 import { registerLocaleData } from '@angular/common';
 import localeEsCo from '@angular/common/locales/es-CO';
 registerLocaleData(localeEsCo);
@@ -50,5 +52,6 @@ export const appConfig: ApplicationConfig = {
     { provide: TransactionsRepository, useClass: TransactionRepositoryImp },
     { provide: AnalyticsRepository, useClass: AnalyticsRepositoryImp },
     { provide: CardsRepository, useClass: CardsRepositoryImp },
+    { provide: WishlistRepository, useClass: WishlistRepositoryImp },
   ],
 };

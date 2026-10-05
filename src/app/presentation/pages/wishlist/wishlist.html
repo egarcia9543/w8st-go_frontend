@@ -1,0 +1,434 @@
+<section class="mx-auto max-w-6xl space-y-5 p-6">
+  <div class="flex flex-wrap items-start justify-between gap-3">
+    <div class="space-y-1">
+      <h1 class="text-2xl font-bold text-foreground">Wishlist</h1>
+      <p class="max-w-2xl text-sm text-muted-foreground">
+        Lo que te gustaría comprar, ordenado por prioridad. Arrastra los ítems entre tiers y dale
+        tiempo a cada deseo: si después de {{ cooldownDays }} días lo sigues queriendo, probablemente
+        no es un impulso.
+      </p>
+    </div>
+
+    <button hlmBtn size="sm" class="cursor-pointer" (click)="openCreate()">
+      <ng-icon name="lucidePlus" class="mr-1.5" />
+      Agregar
+    </button>
+  </div>
+
+  <div class="flex w-fit items-center gap-1 rounded-lg bg-muted p-1 text-sm">
+    @for (tab of statusTabs; track tab.status) {
+      <button
+        type="button"
+        class="cursor-pointer rounded-md px-3 py-1.5 font-medium transition-colors"
+        [class]="
+          facade.status() === tab.status
+            ? 'bg-background text-foreground shadow-sm'
+            : 'text-muted-foreground hover:text-foreground'
+        "
+        (click)="selectStatus(tab.status)"
+      >
+        {{ tab.label }}
+        <span class="ml-1 text-xs text-muted-foreground">
+          {{ counts()[tab.status] }}
+        </span>
+      </button>
+    }
+  </div>
+
+  @if (facade.actionError()) {
+    <div class="rounded-lg bg-destructive/10 p-4">
+      <p class="text-sm text-destructive">{{ facade.actionError() }}</p>
+    </div>
+  }
+
+  @if (facade.state().loading && !facade.state().wishlist) {
+    <div class="space-y-3">
+      @for (row of skeletonRows; track row) {
+        <div class="flex gap-3">
+          <div hlmSkeleton class="h-24 w-20 shrink-0 rounded-lg"></div>
+          <div hlmSkeleton class="h-24 flex-1 rounded-lg"></div>
+        </div>
+      }
+    </div>
+  } @else if (facade.state().error) {
+    <div class="rounded-lg bg-destructive/10 p-4 text-center">
+      <p class="text-sm text-destructive">No se pudo cargar la wishlist.</p>
+      <button hlmBtn variant="outline" class="mt-3 cursor-pointer" (click)="facade.load()">
+        Reintentar
+      </button>
+    </div>
+  } @else if (!isWanted() && isEmpty()) {
+    <div hlmCard class="p-8 text-center">
+      <p class="text-muted-foreground">
+        {{
+          facade.status() === statuses.BOUGHT
+            ? 'Todavía no has marcado nada como comprado.'
+            : 'No hay ítems descartados.'
+        }}
+      </p>
+    </div>
+  } @else {
+    <div class="space-y-3" cdkDropListGroup [class.opacity-60]="facade.state().loading">
+      @for (view of visibleTierViews(); track view.tier.id) {
+        <div class="flex min-h-28 rounded-lg border border-border bg-card">
+          <div class="relative w-20 shrink-0 sm:w-24">
+            <button
+              type="button"
+              class="flex h-full w-full cursor-pointer items-center justify-center rounded-l-[calc(var(--radius)-1px)] p-2 text-center text-lg font-bold break-words text-white transition-opacity hover:opacity-90"
+              [style.background-color]="view.tier.color"
+              [attr.aria-label]="'Editar tier ' + view.tier.label"
+              (click)="startTierEdit(view.tier)"
+            >
+              {{ view.tier.label }}
+            </button>
+
+            @if (editingTierId() === view.tier.id) {
+              <div class="fixed inset-0 z-40" (click)="cancelTierEdit()"></div>
+              <div
+                class="absolute top-2 left-full z-50 ml-2 w-64 space-y-3 rounded-md border border-border bg-popover p-3 text-popover-foreground shadow-md"
+              >
+                <label class="block space-y-1.5">
+                  <span class="text-sm font-medium">Etiqueta</span>
+                  <input
+                    hlmInput
+                    type="text"
+                    class="w-full"
+                    [formControl]="tierLabel"
+                    (keydown.enter)="saveTier(view.tier.id)"
+                  />
+                </label>
+
+                <div class="space-y-1.5">
+                  <span class="text-sm font-medium">Color</span>
+                  <div class="flex flex-wrap gap-2">
+                    @for (color of tierColors; track color) {
+                      <button
+                        type="button"
+                        class="h-7 w-7 cursor-pointer rounded-full ring-offset-2 ring-offset-popover transition"
+                        [class.ring-2]="tierColor() === color"
+                        [class.ring-foreground]="tierColor() === color"
+                        [style.background-color]="color"
+                        [attr.aria-label]="'Color ' + color"
+                        (click)="tierColor.set(color)"
+                      ></button>
+                    }
+                  </div>
+                </div>
+
+                <div class="flex justify-end gap-2">
+                  <button hlmBtn variant="ghost" size="sm" class="cursor-pointer" (click)="cancelTierEdit()">
+                    Cancelar
+                  </button>
+                  <button
+                    hlmBtn
+                    size="sm"
+                    class="cursor-pointer"
+                    [disabled]="facade.busyId() === view.tier.id"
+                    (click)="saveTier(view.tier.id)"
+                  >
+                    Guardar
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+
+          <div
+            cdkDropList
+            cdkDropListOrientation="mixed"
+            class="flex min-w-0 flex-1 flex-wrap content-start items-start gap-3 p-3"
+            [cdkDropListData]="view.tier"
+            [cdkDropListDisabled]="!isWanted()"
+            (cdkDropListDropped)="onDrop($event)"
+          >
+            @for (itemView of view.items; track itemView.item.id) {
+              <div
+                cdkDrag
+                [cdkDragData]="itemView.item"
+                class="wishlist-item group flex w-full flex-col gap-2 rounded-lg border border-border bg-background p-2.5 shadow-xs sm:w-64"
+                [class.cursor-grab]="isWanted()"
+                [class.opacity-50]="facade.busyId() === itemView.item.id"
+              >
+                <div class="wishlist-placeholder" *cdkDragPlaceholder></div>
+
+                <div class="flex gap-3">
+                  @if (itemView.item.imageUrl && !failedImages().has(itemView.item.id)) {
+                    <img
+                      [src]="itemView.item.imageUrl"
+                      [alt]="itemView.item.name"
+                      class="h-16 w-16 shrink-0 rounded-md bg-muted object-cover"
+                      referrerpolicy="no-referrer"
+                      loading="lazy"
+                      draggable="false"
+                      (error)="markImageFailed(itemView.item.id)"
+                    />
+                  } @else {
+                    <div
+                      class="flex h-16 w-16 shrink-0 items-center justify-center rounded-md text-xl font-bold text-white"
+                      [style.background-color]="view.tier.color"
+                    >
+                      {{ itemView.initial }}
+                    </div>
+                  }
+
+                  <div class="min-w-0 flex-1">
+                    <p class="truncate font-medium text-foreground" [title]="itemView.item.name">
+                      {{ itemView.item.name }}
+                    </p>
+                    <p class="font-semibold text-foreground tabular-nums">{{ itemView.priceLabel }}</p>
+                    @if (facade.status() === statuses.BOUGHT && itemView.item.boughtAt) {
+                      <p class="text-xs text-muted-foreground">
+                        Comprado el {{ itemView.item.boughtAt | date: 'longDate' }}
+                      </p>
+                    } @else {
+                      <p
+                        class="text-xs"
+                        [class]="itemView.cooledDown ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'"
+                        [title]="itemView.cooledDown ? 'Pasó el periodo de enfriamiento de ' + cooldownDays + ' días' : ''"
+                      >
+                        {{ itemView.ageLabel }}
+                      </p>
+                    }
+                  </div>
+                </div>
+
+                @if (itemView.item.notes) {
+                  <p class="line-clamp-2 text-xs text-muted-foreground" [title]="itemView.item.notes">
+                    {{ itemView.item.notes }}
+                  </p>
+                }
+
+                <div class="flex items-center justify-between gap-1">
+                  @if (itemView.item.productUrl) {
+                    <a
+                      [href]="itemView.item.productUrl"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+                    >
+                      <ng-icon name="lucideExternalLink" />
+                      Ver producto
+                    </a>
+                  } @else {
+                    <span></span>
+                  }
+
+                  <div class="flex items-center gap-0.5">
+                    @if (isWanted()) {
+                      <button
+                        hlmBtn
+                        variant="ghost"
+                        size="icon-sm"
+                        class="cursor-pointer"
+                        title="Editar"
+                        [disabled]="facade.busyId() === itemView.item.id"
+                        (click)="openEdit(itemView.item)"
+                      >
+                        <ng-icon name="lucidePencil" />
+                        <span class="sr-only">Editar</span>
+                      </button>
+                      <button
+                        hlmBtn
+                        variant="ghost"
+                        size="icon-sm"
+                        class="cursor-pointer text-emerald-600"
+                        title="Marcar como comprado"
+                        [disabled]="facade.busyId() === itemView.item.id"
+                        (click)="setStatus(itemView.item, statuses.BOUGHT)"
+                      >
+                        <ng-icon name="lucideCheck" />
+                        <span class="sr-only">Marcar como comprado</span>
+                      </button>
+                      <button
+                        hlmBtn
+                        variant="ghost"
+                        size="icon-sm"
+                        class="cursor-pointer"
+                        title="Descartar"
+                        [disabled]="facade.busyId() === itemView.item.id"
+                        (click)="setStatus(itemView.item, statuses.DISCARDED)"
+                      >
+                        <ng-icon name="lucideX" />
+                        <span class="sr-only">Descartar</span>
+                      </button>
+                    } @else {
+                      <button
+                        hlmBtn
+                        variant="ghost"
+                        size="sm"
+                        class="cursor-pointer"
+                        [disabled]="facade.busyId() === itemView.item.id"
+                        (click)="setStatus(itemView.item, statuses.WANTED)"
+                      >
+                        <ng-icon name="lucideRotateCcw" class="mr-1" />
+                        Volver a la lista
+                      </button>
+                    }
+
+                    @if (confirmingDeleteId() === itemView.item.id) {
+                      <button
+                        hlmBtn
+                        variant="destructive"
+                        size="sm"
+                        class="cursor-pointer"
+                        [disabled]="facade.busyId() === itemView.item.id"
+                        (click)="requestDelete(itemView.item)"
+                        (blur)="confirmingDeleteId.set(null)"
+                      >
+                        ¿Eliminar?
+                      </button>
+                    } @else {
+                      <button
+                        hlmBtn
+                        variant="ghost"
+                        size="icon-sm"
+                        class="cursor-pointer text-muted-foreground hover:text-destructive"
+                        title="Eliminar"
+                        [disabled]="facade.busyId() === itemView.item.id"
+                        (click)="requestDelete(itemView.item)"
+                      >
+                        <ng-icon name="lucideTrash2" />
+                        <span class="sr-only">Eliminar</span>
+                      </button>
+                    }
+                  </div>
+                </div>
+              </div>
+            }
+
+            @if (isWanted()) {
+              <button
+                type="button"
+                class="flex h-[5.5rem] w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-dashed border-border text-sm text-muted-foreground transition-colors hover:border-foreground/40 hover:text-foreground sm:w-40"
+                (click)="openCreate(view.tier.id)"
+              >
+                <ng-icon name="lucidePlus" />
+                Agregar
+              </button>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  }
+</section>
+
+<hlm-sheet side="right" [state]="formOpen() ? 'open' : 'closed'" (stateChanged)="onSheetStateChange($event)">
+  <hlm-sheet-content *hlmSheetPortal="let ctx" class="overflow-y-auto">
+    <div hlmSheetHeader>
+      <h3 hlmSheetTitle>{{ editingItem() ? 'Editar ítem' : 'Agregar a la wishlist' }}</h3>
+      <p hlmSheetDescription>
+        {{ editingItem() ? 'Para cambiarlo de tier, arrástralo en la lista.' : 'Lo que no quieras llenar ahora lo puedes completar después.' }}
+      </p>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="submit()" class="space-y-4 px-4 pb-4">
+      <label class="block space-y-1.5">
+        <span class="text-sm font-medium text-foreground">Nombre</span>
+        <input hlmInput type="text" class="w-full" formControlName="name" placeholder="Audífonos Sony WH-1000XM6" />
+        @if (form.controls.name.touched && form.controls.name.invalid) {
+          <span class="block text-xs text-destructive">El nombre es obligatorio.</span>
+        }
+      </label>
+
+      <div class="grid grid-cols-[1fr_auto] gap-3">
+        <label class="block space-y-1.5">
+          <span class="text-sm font-medium text-foreground">Precio</span>
+          <input hlmInput type="number" class="w-full" formControlName="price" min="0" step="any" placeholder="1200000" />
+        </label>
+
+        <label class="block space-y-1.5">
+          <span class="text-sm font-medium text-foreground">Moneda</span>
+          <select
+            formControlName="currency"
+            class="h-9 cursor-pointer rounded-md border border-input bg-background px-2 text-sm text-foreground"
+          >
+            @for (currency of currencies; track currency) {
+              <option [value]="currency">{{ currency }}</option>
+            }
+          </select>
+        </label>
+      </div>
+      @if (form.controls.price.touched && form.controls.price.invalid) {
+        <span class="-mt-2 block text-xs text-destructive">El precio debe ser mayor que 0.</span>
+      }
+
+      @if (!editingItem()) {
+        <label class="block space-y-1.5">
+          <span class="text-sm font-medium text-foreground">Tier</span>
+          <select
+            formControlName="tierId"
+            class="h-9 w-full cursor-pointer rounded-md border border-input bg-background px-2 text-sm text-foreground"
+          >
+            @for (tier of tiers(); track tier.id) {
+              <option [value]="tier.id">{{ tier.label }}</option>
+            }
+          </select>
+        </label>
+      }
+
+      <label class="block space-y-1.5">
+        <span class="text-sm font-medium text-foreground">URL de la imagen</span>
+        <input
+          hlmInput
+          type="url"
+          class="w-full"
+          formControlName="imageUrl"
+          placeholder="https://…/producto.jpg"
+          (input)="previewFailed.set(false)"
+        />
+        @if (form.controls.imageUrl.touched && form.controls.imageUrl.invalid) {
+          <span class="block text-xs text-destructive">Debe empezar por http:// o https://</span>
+        }
+      </label>
+
+      @if (imagePreview(); as preview) {
+        @if (previewFailed()) {
+          <p class="text-xs text-muted-foreground">
+            No se pudo cargar la imagen. Algunas tiendas no dejan mostrarla fuera de su sitio; se usará
+            la inicial del nombre.
+          </p>
+        } @else {
+          <img
+            [src]="preview"
+            alt="Vista previa"
+            class="h-40 w-full rounded-md border border-border bg-muted object-contain"
+            referrerpolicy="no-referrer"
+            (error)="previewFailed.set(true)"
+          />
+        }
+      }
+
+      <label class="block space-y-1.5">
+        <span class="text-sm font-medium text-foreground">URL del producto</span>
+        <input hlmInput type="url" class="w-full" formControlName="productUrl" placeholder="https://tienda.com/producto" />
+        @if (form.controls.productUrl.touched && form.controls.productUrl.invalid) {
+          <span class="block text-xs text-destructive">Debe empezar por http:// o https://</span>
+        }
+      </label>
+
+      <label class="block space-y-1.5">
+        <span class="text-sm font-medium text-foreground">Notas</span>
+        <textarea
+          formControlName="notes"
+          rows="3"
+          class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
+          placeholder="Color, talla, por qué lo quieres…"
+        ></textarea>
+      </label>
+
+      @if (formError()) {
+        <p class="text-sm text-destructive">{{ formError() }}</p>
+      }
+
+      <div class="flex justify-end gap-2 pt-2">
+        <button hlmBtn type="button" variant="ghost" class="cursor-pointer" (click)="closeForm()">
+          Cancelar
+        </button>
+        <button hlmBtn type="submit" class="cursor-pointer" [disabled]="facade.busyId() !== null">
+          {{ facade.busyId() !== null ? 'Guardando…' : 'Guardar' }}
+        </button>
+      </div>
+    </form>
+  </hlm-sheet-content>
+</hlm-sheet>
