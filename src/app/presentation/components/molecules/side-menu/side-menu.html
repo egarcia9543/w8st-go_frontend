@@ -18,6 +18,15 @@
                   <ng-icon [name]="item.icon" />
                   <span>{{ item.title }}</span>
                 </a>
+                @if (item.badge && item.badge() > 0) {
+                  <div
+                    hlmSidebarMenuBadge
+                    class="bg-amber-500/15 text-amber-700 dark:text-amber-400"
+                    [attr.title]="item.badge() + ' ' + item.badgeTooltip"
+                  >
+                    {{ item.badge() }}
+                  </div>
+                }
               </li>
             }
           </ul>

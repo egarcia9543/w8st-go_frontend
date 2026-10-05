@@ -14,10 +14,13 @@ import {
   CardKind,
   Direction,
   FundingSource,
+  isClassifiable,
   PaymentMethod,
   Transaction,
   TransactionType,
 } from '../../../domain/entities/transaction.entity';
+import { Category } from '../../../domain/entities/category.entity';
+import { CategoriesFacade } from '../../facades/categories.facade';
 import { TransactionsFacade } from '../../facades/transactions.facade';
 import { formatMoney } from '../../pipes/format-money';
 import { SignedAmountPipe } from '../../pipes/signed-amount.pipe';
@@ -25,9 +28,17 @@ import { SignedAmountPipe } from '../../pipes/signed-amount.pipe';
 type DirectionFilter = 'all' | Direction;
 type SourceFilter = 'all' | FundingSource;
 
+const CATEGORY_FILTER_ALL = 'all';
+const CATEGORY_FILTER_NONE = 'none';
+
 interface CardOption {
   id: string;
   label: string;
+}
+
+interface CategoryOptionGroup {
+  label: string;
+  categories: Category[];
 }
 
 interface CurrencyTotal {
@@ -58,6 +69,10 @@ interface CurrencyTotal {
 })
 export class Transactions {
   protected readonly transactionsFacade = inject(TransactionsFacade);
+  protected readonly categoriesFacade = inject(CategoriesFacade);
+  protected readonly classifiable = isClassifiable;
+  protected readonly categoryFilterAll = CATEGORY_FILTER_ALL;
+  protected readonly categoryFilterNone = CATEGORY_FILTER_NONE;
   protected readonly directions = Direction;
   protected readonly fundingSources = FundingSource;
   private readonly locale = inject(LOCALE_ID);
@@ -92,6 +107,27 @@ export class Transactions {
   protected readonly directionFilter = signal<DirectionFilter>('all');
   protected readonly sourceFilter = signal<SourceFilter>('all');
   protected readonly cardFilter = signal<string>('all');
+  protected readonly categoryFilter = signal<string>(CATEGORY_FILTER_ALL);
+  protected readonly selectedIds = signal<ReadonlySet<string>>(new Set());
+
+  protected readonly categoryGroups = computed<CategoryOptionGroup[]>(() => {
+    const catalog = this.categoriesFacade.state().catalog;
+    if (!catalog) return [];
+
+    const groups = catalog.groups
+      .filter((group) => group.categories.length > 0)
+      .map((group) => ({ label: group.name, categories: group.categories }));
+
+    return catalog.ungrouped.length > 0
+      ? [...groups, { label: 'Sin grupo', categories: catalog.ungrouped }]
+      : groups;
+  });
+
+  protected readonly categoryFilterToLabel = (value: string): string => {
+    if (value === CATEGORY_FILTER_ALL) return 'Toda categoría';
+    if (value === CATEGORY_FILTER_NONE) return 'Sin clasificar';
+    return this.categoriesFacade.byId().get(value)?.name ?? value;
+  };
 
   protected readonly sourceOptions: ReadonlyArray<{ value: string; label: string }> = [
     { value: 'all', label: 'Toda fuente' },
@@ -133,22 +169,36 @@ export class Transactions {
     return [...byId.values()].sort((a, b) => a.label.localeCompare(b.label));
   });
 
+  protected readonly pendingCount = computed(
+    () => this.allTx().filter((tx) => isClassifiable(tx) && !tx.category).length,
+  );
+
   protected readonly hasActiveFilters = computed(
     () =>
       this.directionFilter() !== 'all' ||
       this.sourceFilter() !== 'all' ||
-      this.cardFilter() !== 'all',
+      this.cardFilter() !== 'all' ||
+      this.categoryFilter() !== CATEGORY_FILTER_ALL,
   );
 
   protected readonly filtered = computed(() => {
     const direction = this.directionFilter();
     const source = this.sourceFilter();
     const cardId = this.cardFilter();
+    const categoryId = this.categoryFilter();
 
     return this.allTx().filter((tx) => {
       if (direction !== 'all' && tx.direction !== direction) return false;
       if (source !== 'all' && tx.fundingSource !== source) return false;
       if (cardId !== 'all' && tx.card?.id !== cardId) return false;
+      if (categoryId === CATEGORY_FILTER_NONE && (!isClassifiable(tx) || tx.category)) return false;
+      if (
+        categoryId !== CATEGORY_FILTER_ALL &&
+        categoryId !== CATEGORY_FILTER_NONE &&
+        tx.category?.id !== categoryId
+      ) {
+        return false;
+      }
       return true;
     });
   });
@@ -203,10 +253,83 @@ export class Transactions {
     return this.filtered().slice(start, start + this.pageSize());
   });
 
+  private readonly selectablePageIds = computed(() =>
+    this.paged()
+      .filter((tx) => isClassifiable(tx))
+      .map((tx) => tx.id),
+  );
+
+  protected readonly pageFullySelected = computed(() => {
+    const ids = this.selectablePageIds();
+    const selected = this.selectedIds();
+    return ids.length > 0 && ids.every((id) => selected.has(id));
+  });
+
   constructor() {
-    this.route.queryParamMap
-      .pipe(takeUntilDestroyed())
-      .subscribe((p) => this.transactionsFacade.loadTransactions(p.get('month') ?? undefined));
+    this.categoriesFacade.ensureLoaded();
+
+    this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe((p) => {
+      this.clearSelection();
+      this.transactionsFacade.loadTransactions(p.get('month') ?? undefined);
+    });
+  }
+
+  onCategoryChange(tx: Transaction, categoryId: string): void {
+    this.transactionsFacade.categorize(tx, this.toTransactionCategory(categoryId));
+  }
+
+  applyBulkCategory(select: HTMLSelectElement): void {
+    const categoryId = select.value;
+    select.value = '';
+
+    const ids = [...this.selectedIds()];
+    if (ids.length === 0 || !categoryId) return;
+
+    this.transactionsFacade
+      .categorizeMany(ids, this.toTransactionCategory(categoryId))
+      .subscribe({ next: () => this.clearSelection() });
+  }
+
+  toggleSelected(tx: Transaction): void {
+    this.selectedIds.update((selected) => {
+      const next = new Set(selected);
+      if (next.has(tx.id)) next.delete(tx.id);
+      else next.add(tx.id);
+      return next;
+    });
+  }
+
+  togglePageSelection(): void {
+    const ids = this.selectablePageIds();
+    const selectAll = !this.pageFullySelected();
+
+    this.selectedIds.update((selected) => {
+      const next = new Set(selected);
+      for (const id of ids) {
+        if (selectAll) next.add(id);
+        else next.delete(id);
+      }
+      return next;
+    });
+  }
+
+  clearSelection(): void {
+    this.selectedIds.set(new Set());
+  }
+
+  setCategoryFilter(value: string): void {
+    this.categoryFilter.set(value);
+    this.pageIndex.set(0);
+  }
+
+  showPending(): void {
+    this.setDirectionFilter('all');
+    this.setCategoryFilter(CATEGORY_FILTER_NONE);
+  }
+
+  private toTransactionCategory(categoryId: string) {
+    const category = this.categoriesFacade.byId().get(categoryId);
+    return category ? { id: category.id, name: category.name, color: category.color } : null;
   }
 
   onMonthChange(month: string): void {
@@ -243,6 +366,7 @@ export class Transactions {
     this.directionFilter.set('all');
     this.sourceFilter.set('all');
     this.cardFilter.set('all');
+    this.categoryFilter.set(CATEGORY_FILTER_ALL);
     this.pageIndex.set(0);
   }
 

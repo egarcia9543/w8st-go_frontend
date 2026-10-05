@@ -1,8 +1,11 @@
 import { inject, Injectable, signal } from '@angular/core';
+import { finalize, Observable, tap } from 'rxjs';
 import { GetTransactionsUseCase } from '../../application/use-cases/get-transactions/get-transactions.use-case';
-import { Transaction } from '../../domain/entities/transaction.entity';
+import { Transaction, TransactionCategory } from '../../domain/entities/transaction.entity';
 import { SyncTransactionsUseCase } from '../../application/use-cases/sync-transactions/sync-transactions.use-case';
 import { SyncResult } from '../../domain/entities/sync.entity';
+import { CategorizeTransactionsUseCase } from '../../application/use-cases/categorize-transactions/categorize-transactions.use-case';
+import { GetUncategorizedCountUseCase } from '../../application/use-cases/get-uncategorized-count/get-uncategorized-count.use-case';
 
 export interface TransactionsState {
   transactions: Transaction[];
@@ -16,10 +19,20 @@ export interface SyncState {
   error: boolean;
 }
 
+const bogotaMonthFormatter = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'America/Bogota',
+  year: 'numeric',
+  month: '2-digit',
+});
+
+export const currentBogotaMonth = (): string => bogotaMonthFormatter.format(new Date());
+
 @Injectable({ providedIn: 'root' })
 export class TransactionsFacade {
   private readonly getTransactionsUseCase = inject(GetTransactionsUseCase);
   private readonly syncUseCase = inject(SyncTransactionsUseCase);
+  private readonly categorizeUseCase = inject(CategorizeTransactionsUseCase);
+  private readonly getUncategorizedCountUseCase = inject(GetUncategorizedCountUseCase);
 
   private readonly initialState: TransactionsState = {
     transactions: [],
@@ -38,6 +51,15 @@ export class TransactionsFacade {
 
   private readonly _syncState = signal({ ...this.syncInitialState });
   readonly syncState = this._syncState.asReadonly();
+
+  private readonly _uncategorizedCount = signal(0);
+  readonly uncategorizedCount = this._uncategorizedCount.asReadonly();
+
+  private readonly _categorizing = signal(false);
+  readonly categorizing = this._categorizing.asReadonly();
+
+  private readonly _categorizeError = signal<string | null>(null);
+  readonly categorizeError = this._categorizeError.asReadonly();
 
   loadTransactions(month?: string): void {
     this._transactionsState.set({ error: false, loading: true, transactions: [] });
@@ -72,8 +94,58 @@ export class TransactionsFacade {
           error: false,
         });
         this.loadTransactions(month);
+        this.loadUncategorizedCount();
       },
       error: () => this._syncState.set({ syncing: false, result: null, error: true }),
     });
+  }
+
+  loadUncategorizedCount(): void {
+    this.getUncategorizedCountUseCase.execute(currentBogotaMonth()).subscribe({
+      next: (count) => this._uncategorizedCount.set(count),
+      error: () => this._uncategorizedCount.set(0),
+    });
+  }
+
+  categorize(tx: Transaction, category: TransactionCategory | null): void {
+    const previous = tx.category;
+
+    this._categorizeError.set(null);
+    this.setCategory([tx.id], category ?? undefined);
+
+    this.categorizeUseCase.execute(tx.id, category?.id ?? null).subscribe({
+      next: () => this.loadUncategorizedCount(),
+      error: () => {
+        this.setCategory([tx.id], previous);
+        this._categorizeError.set('No se pudo clasificar la transacción. Intenta de nuevo.');
+      },
+    });
+  }
+
+  categorizeMany(ids: string[], category: TransactionCategory | null): Observable<number> {
+    this._categorizeError.set(null);
+    this._categorizing.set(true);
+
+    return this.categorizeUseCase.executeMany(ids, category?.id ?? null).pipe(
+      tap({
+        next: () => {
+          this.setCategory(ids, category ?? undefined);
+          this.loadUncategorizedCount();
+        },
+        error: () => this._categorizeError.set('No se pudieron clasificar las transacciones.'),
+      }),
+      finalize(() => this._categorizing.set(false)),
+    );
+  }
+
+  private setCategory(ids: string[], category: TransactionCategory | undefined): void {
+    const targets = new Set(ids);
+
+    this._transactionsState.update((state) => ({
+      ...state,
+      transactions: state.transactions.map((tx) =>
+        targets.has(tx.id) ? { ...tx, category } : tx,
+      ),
+    }));
   }
 }

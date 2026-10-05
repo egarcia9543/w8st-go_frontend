@@ -12,6 +12,7 @@ export interface Transaction {
   counterpartyName?: string;
   counterpartyKey?: string;
   card?: TransactionCard;
+  category?: TransactionCategory;
   excludeFromSpending: boolean;
   transactionDate: string;
 }
@@ -22,6 +23,17 @@ export interface TransactionCard {
   kind: CardKind;
   alias?: string;
 }
+
+export interface TransactionCategory {
+  id: string;
+  name: string;
+  color: string;
+}
+
+export const isClassifiable = (tx: Transaction): boolean =>
+  tx.direction === Direction.OUTFLOW &&
+  (tx.fundingSource === FundingSource.OWN_FUNDS || tx.fundingSource === FundingSource.CREDIT) &&
+  !tx.excludeFromSpending;
 
 export enum Direction {
   OUTFLOW = 'OUTFLOW',

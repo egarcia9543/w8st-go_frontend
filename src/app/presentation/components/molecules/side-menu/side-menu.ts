@@ -14,6 +14,15 @@ import {
 } from '@ng-icons/lucide';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthFacade } from '../../../facades/auth.facade';
+import { TransactionsFacade } from '../../../facades/transactions.facade';
+
+interface MenuItem {
+  title: string;
+  url: string;
+  icon: string;
+  badge?: () => number;
+  badgeTooltip?: string;
+}
 
 @Component({
   selector: 'app-side-menu',
@@ -36,6 +45,7 @@ import { AuthFacade } from '../../../facades/auth.facade';
 })
 export class SideMenu {
   private readonly authFacade = inject(AuthFacade);
+  private readonly transactionsFacade = inject(TransactionsFacade);
   private readonly router = inject(Router);
 
   protected readonly userName = computed(
@@ -45,7 +55,7 @@ export class SideMenu {
     () => this.authFacade.sessionState().user?.userEmail ?? '',
   );
 
-  protected readonly _items = [
+  protected readonly _items: MenuItem[] = [
     {
       title: 'Dashboard',
       url: 'dashboard',
@@ -55,6 +65,8 @@ export class SideMenu {
       title: 'Transacciones',
       url: 'transacciones',
       icon: 'lucideInbox',
+      badge: this.transactionsFacade.uncategorizedCount,
+      badgeTooltip: 'gastos de este mes sin clasificar',
     },
     {
       title: 'Tarjetas',
@@ -67,6 +79,10 @@ export class SideMenu {
       icon: 'lucideGift',
     },
   ];
+
+  constructor() {
+    this.transactionsFacade.loadUncategorizedCount();
+  }
 
   signInWithGoogle(): void {
     this.authFacade.signInWithGoogle();

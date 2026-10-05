@@ -131,6 +131,30 @@
       </hlm-select>
     }
 
+    @if (categoryGroups().length > 0) {
+      <hlm-select
+        [value]="categoryFilter()"
+        [itemToString]="categoryFilterToLabel"
+        (valueChange)="setCategoryFilter($any($event))"
+      >
+        <hlm-select-trigger class="w-48">
+          <hlm-select-value />
+        </hlm-select-trigger>
+        <hlm-select-content *hlmSelectPortal>
+          <hlm-select-item [value]="categoryFilterAll">Toda categoría</hlm-select-item>
+          <hlm-select-item [value]="categoryFilterNone">Sin clasificar</hlm-select-item>
+          @for (group of categoryGroups(); track group.label) {
+            <hlm-select-group>
+              <hlm-select-label>{{ group.label }}</hlm-select-label>
+              @for (category of group.categories; track category.id) {
+                <hlm-select-item [value]="category.id">{{ category.name }}</hlm-select-item>
+              }
+            </hlm-select-group>
+          }
+        </hlm-select-content>
+      </hlm-select>
+    }
+
     @if (hasActiveFilters()) {
       <button hlmBtn variant="ghost" size="sm" class="cursor-pointer" (click)="clearFilters()">
         Limpiar filtros
@@ -138,15 +162,66 @@
     }
   </div>
 
+  @if (pendingCount() > 0 && categoryFilter() !== categoryFilterNone) {
+    <button
+      type="button"
+      class="flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg bg-amber-500/10 px-4 py-2.5 text-left text-sm text-amber-700 transition-colors hover:bg-amber-500/15 dark:text-amber-400"
+      (click)="showPending()"
+    >
+      <span>
+        {{ pendingCount() === 1 ? 'Hay 1 gasto' : 'Hay ' + pendingCount() + ' gastos' }} sin
+        clasificar en este periodo.
+      </span>
+      <span class="font-medium">Ver pendientes</span>
+    </button>
+  }
+
+  @if (transactionsFacade.categorizeError()) {
+    <p class="text-sm text-destructive">{{ transactionsFacade.categorizeError() }}</p>
+  }
+
+  @if (selectedIds().size > 0) {
+    <div
+      class="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-muted/40 px-4 py-2.5 text-sm"
+    >
+      <span class="font-medium text-foreground">
+        {{ selectedIds().size === 1 ? '1 seleccionada' : selectedIds().size + ' seleccionadas' }}
+      </span>
+      <select
+        #bulkSelect
+        class="h-8 cursor-pointer rounded-md border border-input bg-background px-2 text-sm text-foreground"
+        aria-label="Clasificar selección como"
+        [disabled]="transactionsFacade.categorizing()"
+        (change)="applyBulkCategory(bulkSelect)"
+      >
+        <option value="" selected disabled>
+          {{ transactionsFacade.categorizing() ? 'Clasificando…' : 'Clasificar como…' }}
+        </option>
+        @for (group of categoryGroups(); track group.label) {
+          <optgroup [label]="group.label">
+            @for (category of group.categories; track category.id) {
+              <option [value]="category.id">{{ category.name }}</option>
+            }
+          </optgroup>
+        }
+      </select>
+      <button hlmBtn variant="ghost" size="sm" class="cursor-pointer" (click)="clearSelection()">
+        Quitar selección
+      </button>
+    </div>
+  }
+
   @if (transactionsFacade.transactionsState().loading) {
     <div class="overflow-hidden rounded-lg border border-border bg-card">
       <div hlmTableContainer>
         <table hlmTable>
           <thead hlmTHead>
             <tr hlmTr class="bg-muted/40">
+              <th hlmTh class="w-10"></th>
               <th hlmTh>Comercio / Destinatario</th>
               <th hlmTh>Tipo</th>
               <th hlmTh>Método</th>
+              <th hlmTh>Categoría</th>
               <th hlmTh>Fecha</th>
               <th hlmTh><div class="text-right">Monto</div></th>
             </tr>
@@ -154,9 +229,11 @@
           <tbody hlmTBody>
             @for (row of skeletonRows; track row) {
               <tr hlmTr>
+                <td hlmTd><div hlmSkeleton class="h-4 w-4"></div></td>
                 <td hlmTd><div hlmSkeleton class="h-4 w-40"></div></td>
                 <td hlmTd><div hlmSkeleton class="h-5 w-20 rounded-full"></div></td>
                 <td hlmTd><div hlmSkeleton class="h-4 w-24"></div></td>
+                <td hlmTd><div hlmSkeleton class="h-4 w-28"></div></td>
                 <td hlmTd><div hlmSkeleton class="h-4 w-32"></div></td>
                 <td hlmTd><div hlmSkeleton class="ml-auto h-4 w-20"></div></td>
               </tr>
@@ -183,16 +260,37 @@
         <table hlmTable>
           <thead hlmTHead>
             <tr hlmTr class="bg-muted/40">
+              <th hlmTh class="w-10">
+                <input
+                  type="checkbox"
+                  class="h-4 w-4 cursor-pointer accent-primary"
+                  aria-label="Seleccionar los gastos de esta página"
+                  [checked]="pageFullySelected()"
+                  (change)="togglePageSelection()"
+                />
+              </th>
               <th hlmTh>Comercio / Destinatario</th>
               <th hlmTh>Tipo</th>
               <th hlmTh>Método</th>
+              <th hlmTh>Categoría</th>
               <th hlmTh>Fecha</th>
               <th hlmTh><div class="text-right">Monto</div></th>
             </tr>
           </thead>
           <tbody hlmTBody>
             @for (tx of paged(); track tx.id) {
-              <tr hlmTr>
+              <tr hlmTr [class.bg-muted]="selectedIds().has(tx.id)">
+                <td hlmTd class="w-10">
+                  @if (classifiable(tx)) {
+                    <input
+                      type="checkbox"
+                      class="h-4 w-4 cursor-pointer accent-primary"
+                      [attr.aria-label]="'Seleccionar ' + counterparty(tx)"
+                      [checked]="selectedIds().has(tx.id)"
+                      (change)="toggleSelected(tx)"
+                    />
+                  }
+                </td>
                 <td hlmTd class="font-medium text-foreground">{{ counterparty(tx) }}</td>
                 <td hlmTd>
                   <span
@@ -202,6 +300,42 @@
                   </span>
                 </td>
                 <td hlmTd class="text-muted-foreground">{{ methodLabel(tx.paymentMethod) }}</td>
+                <td hlmTd>
+                  @if (classifiable(tx)) {
+                    <div class="flex items-center gap-2">
+                      <span
+                        class="h-2.5 w-2.5 shrink-0 rounded-full"
+                        [class]="tx.category ? '' : 'border border-dashed border-amber-500'"
+                        [style.background-color]="tx.category?.color ?? null"
+                      ></span>
+                      <select
+                        class="max-w-40 cursor-pointer rounded-md border border-transparent bg-transparent py-1 pr-1 text-sm hover:border-border focus:border-border"
+                        [class]="tx.category ? 'text-foreground' : 'text-amber-700 dark:text-amber-400'"
+                        [attr.aria-label]="'Categoría de ' + counterparty(tx)"
+                        (change)="onCategoryChange(tx, $any($event.target).value)"
+                      >
+                        <option value="" class="text-foreground" [selected]="!tx.category">
+                          Sin clasificar
+                        </option>
+                        @for (group of categoryGroups(); track group.label) {
+                          <optgroup [label]="group.label">
+                            @for (category of group.categories; track category.id) {
+                              <option
+                                class="text-foreground"
+                                [value]="category.id"
+                                [selected]="tx.category?.id === category.id"
+                              >
+                                {{ category.name }}
+                              </option>
+                            }
+                          </optgroup>
+                        }
+                      </select>
+                    </div>
+                  } @else {
+                    <span class="text-muted-foreground">—</span>
+                  }
+                </td>
                 <td hlmTd class="text-muted-foreground">
                   {{ tx.transactionDate | date: 'medium' }}
                 </td>
@@ -213,7 +347,7 @@
               </tr>
             } @empty {
               <tr hlmTr>
-                <td hlmTd colspan="5">
+                <td hlmTd colspan="7">
                   <div class="py-10 text-center text-muted-foreground">No hay transacciones.</div>
                 </td>
               </tr>
@@ -224,7 +358,7 @@
             <tfoot>
               @for (total of totals(); track total.currency) {
                 <tr hlmTr class="border-t-2 border-border bg-muted/40 hover:bg-muted/40">
-                  <td hlmTd colspan="4">
+                  <td hlmTd colspan="6">
                     @if (total.hasBoth) {
                       <span class="text-sm text-muted-foreground">
                         {{ total.count }} movimientos · Ingresos {{ total.inflowLabel }} · Gastos

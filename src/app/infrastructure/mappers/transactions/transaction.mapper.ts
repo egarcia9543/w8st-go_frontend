@@ -22,6 +22,7 @@ export class TransactionMapper {
       counterpartyName: dto.counterpartyName ?? undefined,
       counterpartyKey: dto.counterpartyKey ?? undefined,
       card: dto.card ? this.cardToDomain(dto.card) : undefined,
+      category: dto.category ?? undefined,
       excludeFromSpending: dto.excludeFromSpending ?? false,
       transactionDate: dto.transactionDate,
     };

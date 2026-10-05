@@ -13,6 +13,7 @@ export interface TransactionDto {
   counterpartyName: string | null;
   counterpartyKey: string | null;
   card: TransactionCardDto | null;
+  category: TransactionCategoryDto | null;
   excludeFromSpending: boolean;
   transactionDate: string;
   createdAt: string;
@@ -23,4 +24,23 @@ export interface TransactionCardDto {
   last4: string;
   kind: string;
   alias: string | null;
+}
+
+export interface TransactionCategoryDto {
+  id: string;
+  name: string;
+  color: string;
+}
+
+export interface CategorizeTransactionsDto {
+  ids: string[];
+  categoryId: string | null;
+}
+
+export interface CategorizeTransactionsResultDto {
+  updated: number;
+}
+
+export interface UncategorizedCountDto {
+  count: number;
 }
