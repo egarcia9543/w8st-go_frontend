@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
-import { Debt, DebtDraft, DebtPlan } from '../../../domain/entities/debt.entity';
+import { Debt, DebtDraft, DebtPlan, DebtStrategy } from '../../../domain/entities/debt.entity';
 import { DebtsRepository } from '../../../domain/repositories/debts/debts.repository';
 import { DebtsApiDatasource } from '../../datasources/debts/debts.api.datasource';
 import { DebtMapper } from '../../mappers/debts/debt.mapper';
@@ -35,9 +35,9 @@ export class DebtsRepositoryImp implements DebtsRepository {
       .pipe(map((dto) => DebtMapper.toDomain(dto)));
   }
 
-  getPlan(extraPerMonth: number): Observable<DebtPlan> {
+  getPlan(extraPerMonth: number, strategy: DebtStrategy): Observable<DebtPlan> {
     return this.debtsDatasource
-      .getPlan(extraPerMonth)
+      .getPlan(extraPerMonth, strategy)
       .pipe(map((dto) => DebtMapper.planToDomain(dto)));
   }
 }

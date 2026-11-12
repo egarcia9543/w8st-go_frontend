@@ -1,4 +1,4 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, inject, Injector, signal } from '@angular/core';
 import { HlmSidebarImports } from '@spartan-ng/helm/sidebar';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
@@ -24,6 +24,7 @@ interface MenuItem {
   icon: string;
   badge?: () => number;
   badgeTooltip?: string;
+  badgeTone?: 'warning' | 'danger';
 }
 
 @Component({
@@ -50,11 +51,14 @@ interface MenuItem {
 export class SideMenu {
   private readonly authFacade = inject(AuthFacade);
   private readonly transactionsFacade = inject(TransactionsFacade);
+  private readonly injector = inject(Injector);
+
+  // El módulo de deudas se carga aparte para no inflar el bundle inicial: el
+  // badge arranca en 0 y se llena cuando llega.
+  private readonly debtAlerts = signal<() => number>(() => 0);
   private readonly router = inject(Router);
 
-  protected readonly userName = computed(
-    () => this.authFacade.sessionState().user?.userName ?? '',
-  );
+  protected readonly userName = computed(() => this.authFacade.sessionState().user?.userName ?? '');
   protected readonly userEmail = computed(
     () => this.authFacade.sessionState().user?.userEmail ?? '',
   );
@@ -81,6 +85,9 @@ export class SideMenu {
       title: 'Deudas',
       url: 'deudas',
       icon: 'lucideLandmark',
+      badge: () => this.debtAlerts()(),
+      badgeTooltip: 'pagos vencidos o que vencen en los próximos días',
+      badgeTone: 'danger',
     },
     {
       title: 'Tarjetas',
@@ -96,6 +103,15 @@ export class SideMenu {
 
   constructor() {
     this.transactionsFacade.loadUncategorizedCount();
+    this.loadDebtAlerts();
+  }
+
+  private loadDebtAlerts(): void {
+    import('../../../facades/debts.facade').then(({ DebtsFacade }) => {
+      const debtsFacade = this.injector.get(DebtsFacade);
+      debtsFacade.loadDebts();
+      this.debtAlerts.set(debtsFacade.alertCount);
+    });
   }
 
   signInWithGoogle(): void {

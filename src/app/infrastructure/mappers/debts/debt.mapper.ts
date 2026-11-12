@@ -1,4 +1,10 @@
-import { Debt, DebtKind, DebtPayoff, DebtPlan } from '../../../domain/entities/debt.entity';
+import {
+  Debt,
+  DebtKind,
+  DebtPayoff,
+  DebtPlan,
+  DebtStrategy,
+} from '../../../domain/entities/debt.entity';
 import { DebtDto, DebtPayoffDto, DebtPlanDto } from '../../models/debt.dto';
 
 export class DebtMapper {
@@ -10,10 +16,15 @@ export class DebtMapper {
       balance: dto.balance,
       annualRate: dto.annualRate,
       monthlyPayment: dto.monthlyPayment,
+      dueDay: dto.dueDay ?? undefined,
       paidByOther: dto.paidByOther,
       notes: dto.notes ?? undefined,
       archived: dto.archived,
       updatedAt: dto.updatedAt,
+      recentPayments: (dto.recentPayments ?? []).map((payment) => ({
+        amount: payment.amount,
+        paidAt: payment.paidAt,
+      })),
     };
   }
 
@@ -23,6 +34,7 @@ export class DebtMapper {
 
   static planToDomain(dto: DebtPlanDto): DebtPlan {
     return {
+      strategy: dto.strategy as DebtStrategy,
       startMonth: dto.startMonth,
       extraPerMonth: dto.extraPerMonth,
       monthlyPayment: dto.monthlyPayment,
@@ -41,6 +53,7 @@ export class DebtMapper {
       order: dto.order,
       annualRate: dto.annualRate,
       balance: dto.balance,
+      receivesExtra: dto.receivesExtra,
       payoffMonth: dto.payoffMonth ?? undefined,
       months: dto.months ?? undefined,
       interestPaid: dto.interestPaid,

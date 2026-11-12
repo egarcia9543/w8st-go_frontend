@@ -1,23 +1,33 @@
-<section class="mx-auto max-w-5xl space-y-6 p-6">
-  <div class="flex flex-wrap items-center justify-between gap-3">
+<section class="mx-auto max-w-5xl space-y-5 p-6">
+  <div class="flex flex-wrap items-end justify-between gap-3">
     <div class="space-y-1">
-      <h1 class="text-2xl font-bold text-foreground">Deudas</h1>
-      <p class="max-w-2xl text-sm text-muted-foreground">
-        Plan de pago con el método avalancha: cada deuda paga su cuota y todo lo extra va a la de
-        mayor tasa. Cuando una se cancela, su cuota se suma a la siguiente.
-      </p>
+      <p class="text-sm text-muted-foreground capitalize">{{ todayLabel() }}</p>
+      <h1 class="text-2xl font-bold text-foreground">Tu plan de este mes</h1>
     </div>
 
-    <button
-      hlmBtn
-      size="sm"
-      class="cursor-pointer"
-      [disabled]="editingId() === newDebtId"
-      (click)="startCreating()"
-    >
-      <ng-icon name="lucidePlus" class="mr-1.5" />
-      Nueva deuda
-    </button>
+    <div class="flex flex-wrap gap-2">
+      <button
+        hlmBtn
+        variant="outline"
+        size="sm"
+        class="cursor-pointer"
+        [disabled]="debtsFacade.activeDebts().length === 0"
+        (click)="downloadCalendar()"
+      >
+        <ng-icon name="lucideCalendarPlus" class="mr-1.5" />
+        Agregar al calendario
+      </button>
+      <button
+        hlmBtn
+        size="sm"
+        class="cursor-pointer"
+        [disabled]="editingId() === newDebtId"
+        (click)="startCreating()"
+      >
+        <ng-icon name="lucidePlus" class="mr-1.5" />
+        Nueva deuda
+      </button>
+    </div>
   </div>
 
   @if (saveError()) {
@@ -26,12 +36,366 @@
     </div>
   }
 
-  @if (editingId() === newDebtId) {
-    <div hlmCard class="gap-4 p-5">
-      <h3 hlmCardTitle>Nueva deuda</h3>
-      <ng-container [ngTemplateOutlet]="debtForm" />
+  @if (usdAlert(); as alert) {
+    <div role="alert" class="flex flex-wrap items-center gap-3 rounded-lg bg-destructive/10 p-4">
+      <ng-icon name="lucideTriangleAlert" class="shrink-0 text-destructive" />
+      <div class="min-w-0 flex-[1_1_320px] text-sm text-destructive">
+        <p class="font-semibold">
+          Este mes llevas {{ alert.totalLabel }} en compras en dólares ({{ alert.count }}
+          {{ alert.count === 1 ? 'compra' : 'compras' }}).
+        </p>
+        <p>
+          El banco las difiere a 36 cuotas al 28,56% E.A. por defecto. Cámbialas a 1 cuota en la app
+          de Bancolombia.
+        </p>
+      </div>
+      <button
+        hlmBtn
+        variant="outline"
+        size="sm"
+        class="cursor-pointer"
+        (click)="dismissUsdAlert(alert.key)"
+      >
+        Ya lo revisé
+      </button>
     </div>
   }
+
+  <div class="grid gap-4 md:grid-cols-2">
+    @if (urgent(); as urgent) {
+      <section
+        aria-labelledby="pagar-primero"
+        class="flex flex-col gap-4 rounded-xl bg-primary p-5 text-primary-foreground"
+      >
+        <span
+          class="inline-flex items-center gap-1.5 self-start rounded-full px-2.5 py-1 text-xs font-bold tracking-wide"
+          [class]="urgent.overdue ? 'bg-red-600 text-white' : 'bg-amber-500 text-white'"
+        >
+          <ng-icon name="lucideClock" />
+          PAGA ESTO PRIMERO
+        </span>
+        <div class="space-y-1">
+          <h2 id="pagar-primero" class="text-sm font-medium opacity-80">{{ urgent.title }}</h2>
+          <p class="text-4xl font-bold tracking-tight">{{ urgent.amountLabel }}</p>
+          <p
+            class="text-sm font-semibold"
+            [class]="
+              urgent.overdue
+                ? 'text-red-400 dark:text-red-600'
+                : 'text-amber-400 dark:text-amber-600'
+            "
+          >
+            {{ urgent.whenLabel }}
+          </p>
+        </div>
+        <p class="text-sm leading-relaxed opacity-80">{{ urgent.hint }}</p>
+        <button
+          hlmBtn
+          variant="secondary"
+          class="mt-auto cursor-pointer self-start"
+          [disabled]="debtsFacade.savingDebtId() === urgent.debt.id"
+          (click)="startPaying(urgent.debt, urgent.amount)"
+        >
+          <ng-icon name="lucideBanknote" class="mr-1.5" />
+          Ya lo pagué
+        </button>
+      </section>
+    } @else if (checklistRows().length > 0) {
+      <section
+        aria-labelledby="al-dia"
+        class="flex flex-col gap-3 rounded-xl bg-emerald-500/10 p-5"
+      >
+        <span
+          class="inline-flex items-center gap-1.5 self-start rounded-full bg-emerald-600 px-2.5 py-1 text-xs font-bold tracking-wide text-white"
+        >
+          <ng-icon name="lucideCheck" />
+          AL DÍA
+        </span>
+        <h2 id="al-dia" class="text-xl font-bold text-emerald-700 dark:text-emerald-400">
+          No tienes pagos vencidos ni por vencer esta semana.
+        </h2>
+        @if (nextPayment(); as next) {
+          <p class="text-sm text-emerald-700 dark:text-emerald-400">Lo siguiente: {{ next }}.</p>
+        }
+      </section>
+    }
+
+    @if (target(); as target) {
+      <section
+        aria-labelledby="objetivo"
+        hlmCard
+        class="flex flex-col gap-4 p-5"
+        [class.md:col-span-2]="!urgent() && checklistRows().length === 0"
+      >
+        <div class="flex items-center justify-between gap-2">
+          <span
+            class="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs font-bold tracking-wide text-foreground"
+          >
+            <ng-icon name="lucideTarget" />
+            OBJETIVO #1
+          </span>
+          <span class="text-xs text-muted-foreground">{{ target.rateLabel }}</span>
+        </div>
+        <div class="space-y-1">
+          <h2 id="objetivo" class="text-sm font-medium text-muted-foreground">
+            {{ target.title }}
+          </h2>
+          <p class="text-4xl font-bold tracking-tight text-foreground">{{ target.balanceLabel }}</p>
+          @if (target.payoffLabel) {
+            <p class="text-sm text-muted-foreground">
+              Con el plan queda en cero en
+              <span class="font-semibold text-foreground">{{ target.payoffLabel }}</span>
+            </p>
+          }
+        </div>
+        <div class="space-y-1.5">
+          <div class="flex justify-between text-xs text-muted-foreground">
+            <span>Pagado este mes</span>
+            <span>{{ target.paidLabel }} de {{ target.goalLabel }}</span>
+          </div>
+          <div class="h-2 overflow-hidden rounded-full bg-muted">
+            <div class="h-full rounded-full bg-primary" [style.width.%]="target.progress"></div>
+          </div>
+        </div>
+        <p class="text-sm leading-relaxed text-muted-foreground">
+          Cuota más {{ target.extraLabel }} de abono extra.
+          @if (target.leftoverLabel) {
+            Con eso la cancelas y {{ target.leftoverLabel }}.
+          }
+        </p>
+        <button
+          hlmBtn
+          variant="outline"
+          class="mt-auto cursor-pointer self-start"
+          [disabled]="debtsFacade.savingDebtId() === target.debt.id"
+          (click)="
+            startPaying(target.debt, target.debt.monthlyPayment + debtsFacade.extraPerMonth())
+          "
+        >
+          Registrar abono
+        </button>
+      </section>
+    }
+  </div>
+
+  @if (checklistRows().length > 0) {
+    <section aria-labelledby="checklist" hlmCard class="gap-3 p-5">
+      <div class="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 id="checklist" class="text-lg font-bold text-foreground capitalize">
+          Checklist de {{ monthName() }}
+        </h2>
+        <p class="text-sm text-muted-foreground">
+          <span class="font-semibold text-foreground">
+            {{ checklistSummary().done }} de {{ checklistSummary().total }}
+          </span>
+          listos · {{ checklistSummary().paidLabel }} pagados
+        </p>
+      </div>
+      <div class="h-1.5 overflow-hidden rounded-full bg-muted">
+        <div
+          class="h-full rounded-full bg-emerald-600"
+          [style.width.%]="checklistSummary().percent"
+        ></div>
+      </div>
+
+      <ul class="divide-y divide-border">
+        @for (row of checklistRows(); track row.id) {
+          <li class="flex flex-wrap items-center gap-3 py-3">
+            @if (row.status === statuses.PAID) {
+              <span
+                class="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-emerald-600 text-white"
+                aria-hidden="true"
+              >
+                <ng-icon name="lucideCheck" size="14" />
+              </span>
+            } @else {
+              <span
+                class="h-5 w-5 shrink-0 rounded-md border-2"
+                aria-hidden="true"
+                [class]="
+                  row.status === statuses.OVERDUE
+                    ? 'border-red-500'
+                    : row.status === statuses.SOON
+                      ? 'border-amber-500'
+                      : 'border-muted-foreground/50'
+                "
+              ></span>
+            }
+            <div class="min-w-0 flex-[1_1_220px]">
+              <p
+                class="text-sm font-semibold"
+                [class]="
+                  row.status === statuses.PAID
+                    ? 'text-muted-foreground line-through'
+                    : 'text-foreground'
+                "
+              >
+                {{ row.name }}
+              </p>
+              <p class="truncate text-xs text-muted-foreground">{{ row.detail }}</p>
+            </div>
+            <span
+              class="rounded-md px-2 py-0.5 text-xs font-bold"
+              [class]="
+                row.status === statuses.PAID
+                  ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
+                  : row.status === statuses.OVERDUE
+                    ? 'bg-destructive/10 text-destructive'
+                    : row.status === statuses.SOON
+                      ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400'
+                      : 'bg-muted text-muted-foreground'
+              "
+            >
+              {{ row.badge }}
+            </span>
+            <span class="w-28 text-right text-sm font-semibold text-foreground">
+              {{ row.amountLabel }}
+            </span>
+            @if (row.status !== statuses.PAID) {
+              <button
+                hlmBtn
+                variant="ghost"
+                size="sm"
+                class="cursor-pointer"
+                [attr.aria-label]="'Registrar pago de ' + row.name"
+                [disabled]="debtsFacade.savingDebtId() === row.id"
+                (click)="startPaying(row.debt)"
+              >
+                <ng-icon name="lucideBanknote" />
+              </button>
+            }
+          </li>
+          @if (payingId() === row.id) {
+            <li class="pb-3">
+              <ng-container [ngTemplateOutlet]="paymentFormTpl" />
+            </li>
+          }
+        }
+      </ul>
+
+      @if (missingDueDays() > 0) {
+        <p class="text-xs text-muted-foreground">
+          {{ missingDueDays() === 1 ? '1 deuda no tiene' : missingDueDays() + ' deudas no tienen' }}
+          día de pago y no aparece aquí. Edítala abajo para agregarlo.
+        </p>
+      }
+    </section>
+  }
+
+  <div class="grid gap-4 md:grid-cols-2">
+    @if (pace(); as pace) {
+      @if (pace.configured) {
+        <section
+          aria-labelledby="ritmo"
+          class="flex flex-col gap-3 rounded-xl border p-5"
+          [class]="pace.ahead ? 'border-transparent bg-amber-500/10' : 'border-border bg-card'"
+        >
+          <div class="flex items-center gap-2">
+            <ng-icon
+              name="lucideChartLine"
+              [class]="pace.ahead ? 'text-amber-700 dark:text-amber-400' : 'text-muted-foreground'"
+            />
+            <h2
+              id="ritmo"
+              class="text-sm font-bold"
+              [class]="pace.ahead ? 'text-amber-700 dark:text-amber-400' : 'text-foreground'"
+            >
+              {{ pace.ahead ? 'Vas rápido con el gasto' : 'Vas bien con el gasto' }}
+            </h2>
+          </div>
+          <p
+            class="text-2xl font-bold"
+            [class]="pace.ahead ? 'text-amber-700 dark:text-amber-400' : 'text-foreground'"
+          >
+            {{ pace.spentLabel }}
+            <span class="text-sm font-medium opacity-80">de {{ pace.limitLabel }}</span>
+          </p>
+          <div class="space-y-1.5">
+            <div
+              class="h-2 overflow-hidden rounded-full"
+              [class]="pace.ahead ? 'bg-amber-500/15' : 'bg-muted'"
+            >
+              <div
+                class="h-full rounded-full"
+                [class]="pace.ahead ? 'bg-amber-500' : 'bg-emerald-600'"
+                [style.width.%]="pace.percent > 100 ? 100 : pace.percent"
+              ></div>
+            </div>
+            <p
+              class="text-xs"
+              [class]="pace.ahead ? 'text-amber-700 dark:text-amber-400' : 'text-muted-foreground'"
+            >
+              {{ pace.percent }}% de tus topes y el mes va al {{ pace.monthPercent }}%.
+              @if (pace.topLabel) {
+                Lo grande: {{ pace.topLabel }}.
+              }
+            </p>
+          </div>
+        </section>
+      } @else {
+        <section aria-labelledby="ritmo-vacio" hlmCard class="gap-2 p-5">
+          <h2 id="ritmo-vacio" class="text-sm font-bold text-foreground">Ponle topes a tu gasto</h2>
+          <p class="text-sm text-muted-foreground">
+            Define un tope mensual por categoría y aquí verás si vas más rápido que el mes.
+          </p>
+          <a
+            hlmBtn
+            variant="outline"
+            size="sm"
+            class="self-start"
+            routerLink="/presupuesto/ajustes"
+          >
+            Ir a Ajustes del presupuesto
+          </a>
+        </section>
+      }
+    }
+
+    @if (goal(); as goal) {
+      <section aria-labelledby="meta" hlmCard class="gap-3 p-5" [class.md:col-span-2]="!pace()">
+        <div class="flex items-center gap-2">
+          <ng-icon name="lucideFlag" class="text-emerald-700 dark:text-emerald-400" />
+          <h2 id="meta" class="text-sm font-bold text-foreground">
+            @if (goal.debtFree) {
+              Libre de deudas en {{ goal.debtFree }}
+            } @else {
+              Sin fecha de salida todavía
+            }
+          </h2>
+        </div>
+        @if (goal.monthsLabel) {
+          <p class="text-2xl font-bold text-foreground">
+            {{ goal.monthsLabel }}
+            <span class="text-sm font-medium text-muted-foreground">
+              con {{ goal.extraLabel }} de abono extra al mes
+            </span>
+          </p>
+        } @else {
+          <p class="text-sm text-amber-700 dark:text-amber-400">
+            Alguna cuota no alcanza a cubrir los intereses. Revisa la tasa y la cuota de tus deudas.
+          </p>
+        }
+        <div
+          class="flex gap-1"
+          [attr.aria-label]="goal.done + ' de ' + goal.total + ' deudas canceladas'"
+        >
+          @for (paid of goal.segments; track $index) {
+            <span
+              class="h-2 flex-1 rounded-full"
+              [class]="paid ? 'bg-emerald-600' : 'bg-muted'"
+            ></span>
+          }
+        </div>
+        <p class="text-sm text-muted-foreground">
+          {{ goal.done }} de {{ goal.total }} deudas canceladas · {{ goal.interestLabel }} en
+          intereses por pagar.
+          @if (goal.milestone) {
+            <span class="font-semibold text-foreground">Próximo hito: {{ goal.milestone }}.</span>
+          }
+        </p>
+      </section>
+    }
+  </div>
 
   @if (debtsFacade.state().loading && views().length === 0) {
     <div class="space-y-4">
@@ -50,109 +414,172 @@
         Reintentar
       </button>
     </div>
-  } @else if (views().length === 0) {
+  } @else if (views().length === 0 && editingId() !== newDebtId) {
     <div hlmCard class="p-8 text-center">
       <p class="text-muted-foreground">Todavía no has registrado ninguna deuda.</p>
       <p class="mt-1 text-sm text-muted-foreground">
-        Agrega tus tarjetas y créditos con su saldo, tasa y cuota para ver cuándo sales de cada una.
+        Agrega tus tarjetas y créditos con su saldo, tasa, cuota y día de pago para armar tu plan.
       </p>
     </div>
   } @else {
-    <div hlmCard class="gap-5 p-5" [class.opacity-60]="debtsFacade.planState().loading">
-      @if (summary(); as summary) {
-        <div class="grid gap-4 sm:grid-cols-4">
-          <div>
-            <p class="text-[11px] tracking-wide text-muted-foreground uppercase">Deuda propia</p>
-            <p class="text-lg font-semibold text-foreground">{{ summary.totalBalance }}</p>
-          </div>
-          <div>
-            <p class="text-[11px] tracking-wide text-muted-foreground uppercase">Cuotas al mes</p>
-            <p class="text-lg font-semibold text-foreground">{{ summary.monthlyPayment }}</p>
-          </div>
-          <div>
-            <p class="text-[11px] tracking-wide text-muted-foreground uppercase">
-              Intereses por pagar
-            </p>
-            <p class="text-lg font-semibold text-foreground">{{ summary.totalInterest }}</p>
-          </div>
-          <div>
-            <p class="text-[11px] tracking-wide text-muted-foreground uppercase">Libre de deudas</p>
-            @if (summary.debtFree) {
-              <p class="text-lg font-semibold text-emerald-600 capitalize">
-                {{ summary.debtFree }}
-              </p>
-            } @else {
-              <p class="text-sm text-amber-700 dark:text-amber-400">
-                Sin fecha: alguna cuota no cubre ni los intereses.
-              </p>
-            }
-          </div>
+    <section
+      aria-labelledby="orden"
+      hlmCard
+      class="gap-4 p-5"
+      [class.opacity-60]="debtsFacade.planState().loading"
+    >
+      <div class="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 id="orden" class="text-lg font-bold text-foreground">Orden de ataque</h2>
+        @if (planTotals(); as totals) {
+          <p class="text-sm text-muted-foreground">
+            Deuda propia {{ totals.balance }} · cuotas {{ totals.payment }}/mes
+          </p>
+        }
+      </div>
+
+      <div class="flex flex-wrap items-end gap-3">
+        <div
+          class="flex rounded-md border border-border p-0.5"
+          role="group"
+          aria-label="Estrategia"
+        >
+          @for (strategy of [strategies.CARDS_FIRST, strategies.AVALANCHE]; track strategy) {
+            <button
+              type="button"
+              class="h-8 cursor-pointer rounded px-3 text-sm font-medium transition-colors"
+              [class]="
+                debtsFacade.strategy() === strategy
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
+              "
+              [attr.aria-pressed]="debtsFacade.strategy() === strategy"
+              (click)="setStrategy(strategy)"
+            >
+              {{ strategyLabels[strategy] }}
+            </button>
+          }
         </div>
-      } @else if (debtsFacade.planState().error) {
+
+        <form [formGroup]="extraForm" (ngSubmit)="applyExtra()" class="flex items-end gap-2">
+          <label class="space-y-1">
+            <span class="block text-xs font-medium text-muted-foreground">Abono extra al mes</span>
+            <input
+              hlmInput
+              type="number"
+              class="w-40"
+              formControlName="extra"
+              [min]="0"
+              placeholder="1220000"
+            />
+          </label>
+          <button
+            hlmBtn
+            type="submit"
+            variant="outline"
+            class="cursor-pointer"
+            [disabled]="debtsFacade.planState().loading"
+          >
+            Recalcular
+          </button>
+        </form>
+      </div>
+
+      <p class="text-xs text-muted-foreground">
+        @if (debtsFacade.strategy() === strategies.CARDS_FIRST) {
+          Primero las tarjetas que cobran interés, de menor a mayor saldo; luego los créditos. Lo
+          que está al 0% solo paga su cuota.
+        } @else {
+          Todo lo extra va a la deuda de mayor tasa, sin importar si es tarjeta o crédito.
+        }
+      </p>
+
+      @if (debtsFacade.planState().error) {
         <p class="text-sm text-destructive">No se pudo calcular el plan.</p>
+      } @else if (attackRows().length > 0) {
+        <div class="overflow-x-auto">
+          <table class="w-full min-w-[560px] border-collapse text-sm">
+            <thead>
+              <tr class="text-left text-xs text-muted-foreground">
+                <th scope="col" class="py-2 pr-2 font-semibold">#</th>
+                <th scope="col" class="p-2 font-semibold">Deuda</th>
+                <th scope="col" class="p-2 font-semibold">Tasa</th>
+                <th scope="col" class="p-2 text-right font-semibold">Saldo</th>
+                <th scope="col" class="py-2 pl-2 text-right font-semibold">Sales en</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of attackRows(); track row.id) {
+                <tr
+                  class="border-t border-border"
+                  [class.bg-muted/40]="row.isTarget"
+                  [class.text-muted-foreground]="row.onlyInstallment || row.paidByOther"
+                >
+                  <td class="py-2.5 pr-2">
+                    @if (row.order !== null) {
+                      <span
+                        class="inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold"
+                        [class]="
+                          row.isTarget
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-muted text-muted-foreground'
+                        "
+                      >
+                        {{ row.order }}
+                      </span>
+                    } @else if (row.paidByOther) {
+                      <span
+                        class="rounded bg-sky-500/15 px-1.5 py-0.5 text-[11px] font-bold text-sky-700 dark:text-sky-400"
+                      >
+                        OTRA PERSONA
+                      </span>
+                    } @else {
+                      <span class="text-xs">0%</span>
+                    }
+                  </td>
+                  <td class="p-2" [class.font-semibold]="row.isTarget">
+                    {{ row.name }}
+                    @if (row.isTarget) {
+                      <span class="ml-1.5 text-[11px] font-bold text-destructive"> AHORA </span>
+                    }
+                  </td>
+                  <td class="p-2">{{ row.rateLabel }}</td>
+                  <td class="p-2 text-right">{{ row.balanceLabel }}</td>
+                  <td class="py-2.5 pl-2 text-right" [class.font-semibold]="row.isTarget">
+                    {{ row.onlyInstallment ? 'solo cuota · ' + row.payoffLabel : row.payoffLabel }}
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+
+    <div class="space-y-3">
+      <h2 class="text-lg font-bold text-foreground">Tus deudas</h2>
+
+      @if (editingId() === newDebtId) {
+        <div hlmCard class="gap-4 p-5">
+          <h3 hlmCardTitle>Nueva deuda</h3>
+          <ng-container [ngTemplateOutlet]="debtForm" />
+        </div>
       }
 
-      <form
-        [formGroup]="extraForm"
-        (ngSubmit)="applyExtra()"
-        class="flex flex-wrap items-end gap-3 border-t border-border pt-4"
-      >
-        <label class="space-y-1.5">
-          <span class="block text-sm font-medium text-foreground">Abono extra al mes</span>
-          <input
-            hlmInput
-            type="number"
-            class="w-48"
-            formControlName="extra"
-            [min]="0"
-            placeholder="1220000"
-          />
-        </label>
-        <button
-          hlmBtn
-          type="submit"
-          variant="outline"
-          class="cursor-pointer"
-          [disabled]="debtsFacade.planState().loading"
-        >
-          Recalcular
-        </button>
-        <span class="text-xs text-muted-foreground">
-          Lo que te queda después de cuotas y gastos. Mueve el número para ver cuánto se adelanta.
-        </span>
-      </form>
-    </div>
-
-    <div class="space-y-4">
       @for (view of views(); track view.id) {
         <div hlmCard class="gap-4 p-5">
           <div class="flex flex-wrap items-start justify-between gap-3">
-            <div class="flex min-w-0 items-start gap-3">
-              @if (view.order !== null && !view.paidByOther) {
-                <span
-                  class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-semibold"
-                  [class]="
-                    view.order === 1
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted text-muted-foreground'
-                  "
-                >
-                  {{ view.order }}
-                </span>
-              }
-              <div class="min-w-0">
-                <h3 hlmCardTitle class="truncate">{{ view.name }}</h3>
-                <p class="text-sm text-muted-foreground">
-                  {{ view.kindLabel }} · {{ view.rateLabel }}
-                  @if (view.paidByOther) {
-                    <span
-                      class="ml-1 rounded bg-sky-500/15 px-1.5 py-0.5 text-xs text-sky-700 dark:text-sky-400"
-                    >
-                      La paga otra persona
-                    </span>
-                  }
-                </p>
-              </div>
+            <div class="min-w-0">
+              <h3 hlmCardTitle class="truncate">{{ view.name }}</h3>
+              <p class="text-sm text-muted-foreground">
+                {{ view.kindLabel }} · {{ view.rateLabel }}
+                @if (view.paidByOther) {
+                  <span
+                    class="ml-1 rounded bg-sky-500/15 px-1.5 py-0.5 text-xs text-sky-700 dark:text-sky-400"
+                  >
+                    La paga otra persona
+                  </span>
+                }
+              </p>
             </div>
 
             <div class="flex shrink-0 gap-2">
@@ -200,6 +627,9 @@
             <div>
               <p class="text-[11px] tracking-wide text-muted-foreground uppercase">Cuota</p>
               <p class="font-semibold text-foreground">{{ view.paymentLabel }}</p>
+              <p class="text-xs text-muted-foreground">
+                {{ view.dueDayLabel ?? 'Sin día de pago' }}
+              </p>
             </div>
             <div>
               <p class="text-[11px] tracking-wide text-muted-foreground uppercase">Sales en</p>
@@ -222,39 +652,8 @@
             <p class="text-xs text-muted-foreground">{{ view.notes }}</p>
           }
 
-          @if (payingId() === view.id) {
-            <form
-              [formGroup]="paymentForm"
-              (ngSubmit)="registerPayment()"
-              class="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-muted/30 p-4"
-            >
-              <label class="space-y-1.5">
-                <span class="block text-sm font-medium text-foreground">Valor pagado</span>
-                <input hlmInput type="number" class="w-48" formControlName="amount" [min]="1" />
-              </label>
-              <span class="flex-1 text-xs text-muted-foreground">
-                Se descuenta del saldo. Úsalo para la cuota del mes y para los abonos extra.
-              </span>
-              <div class="flex gap-2">
-                <button
-                  hlmBtn
-                  type="button"
-                  variant="ghost"
-                  class="cursor-pointer"
-                  (click)="cancelPaying()"
-                >
-                  Cancelar
-                </button>
-                <button
-                  hlmBtn
-                  type="submit"
-                  class="cursor-pointer"
-                  [disabled]="debtsFacade.savingDebtId() === view.id"
-                >
-                  {{ debtsFacade.savingDebtId() === view.id ? 'Guardando…' : 'Registrar' }}
-                </button>
-              </div>
-            </form>
+          @if (payingId() === view.id && !isInChecklist(view.id)) {
+            <ng-container [ngTemplateOutlet]="paymentFormTpl" />
           }
 
           @if (editingId() === view.id) {
@@ -304,6 +703,35 @@
   }
 </section>
 
+<ng-template #paymentFormTpl>
+  <form
+    [formGroup]="paymentForm"
+    (ngSubmit)="registerPayment()"
+    class="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-muted/30 p-4"
+  >
+    <label class="space-y-1.5">
+      <span class="block text-sm font-medium text-foreground">Valor pagado</span>
+      <input hlmInput type="number" class="w-48" formControlName="amount" [min]="1" />
+    </label>
+    <span class="min-w-48 flex-1 text-xs text-muted-foreground">
+      Se descuenta del saldo. Úsalo para la cuota del mes y para los abonos extra.
+    </span>
+    <div class="flex gap-2">
+      <button hlmBtn type="button" variant="ghost" class="cursor-pointer" (click)="cancelPaying()">
+        Cancelar
+      </button>
+      <button
+        hlmBtn
+        type="submit"
+        class="cursor-pointer"
+        [disabled]="debtsFacade.savingDebtId() === payingId()"
+      >
+        {{ debtsFacade.savingDebtId() === payingId() ? 'Guardando…' : 'Registrar' }}
+      </button>
+    </div>
+  </form>
+</ng-template>
+
 <ng-template #debtForm>
   <form
     [formGroup]="form"
@@ -313,7 +741,7 @@
     <div class="grid gap-4 sm:grid-cols-2">
       <label class="space-y-1.5">
         <span class="text-sm font-medium text-foreground">Nombre</span>
-        <input hlmInput type="text" formControlName="name" placeholder="Moto Sufi, Amex…" />
+        <input hlmInput type="text" formControlName="name" placeholder="RappiCard, Moto Sufi…" />
       </label>
 
       <label class="space-y-1.5">
@@ -330,7 +758,7 @@
 
       <label class="space-y-1.5">
         <span class="text-sm font-medium text-foreground">Saldo pendiente</span>
-        <input hlmInput type="number" formControlName="balance" [min]="0" placeholder="28271965" />
+        <input hlmInput type="number" formControlName="balance" [min]="0" placeholder="578622" />
       </label>
 
       <label class="space-y-1.5">
@@ -356,8 +784,24 @@
           type="number"
           formControlName="monthlyPayment"
           [min]="1"
-          placeholder="1291215"
+          placeholder="149972"
         />
+      </label>
+
+      <label class="space-y-1.5">
+        <span class="text-sm font-medium text-foreground">Día de pago</span>
+        <input
+          hlmInput
+          type="number"
+          formControlName="dueDay"
+          [min]="1"
+          [max]="31"
+          placeholder="17"
+        />
+        <span class="block text-xs text-muted-foreground">
+          Día del mes del "Pagar antes de" ({{ dueDayRange }}). Activa el checklist y el
+          recordatorio.
+        </span>
       </label>
 
       <label class="flex items-center gap-2 self-end pb-2">
@@ -371,7 +815,7 @@
           hlmInput
           type="text"
           formControlName="notes"
-          placeholder="Opcional. Ej.: avances de mamá, termina en oct. 2027"
+          placeholder="Opcional. Ej.: avances de mamá, termina en dic. 2027"
         />
       </label>
     </div>
