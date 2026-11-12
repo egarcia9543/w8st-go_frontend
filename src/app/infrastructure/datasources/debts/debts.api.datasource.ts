@@ -2,7 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
-import { DebtDto, DebtPaymentDto, DebtPlanDto, SaveDebtDto } from '../../models/debt.dto';
+import { DebtDto, DebtPlanDto, RegisterPaymentDto, SaveDebtDto } from '../../models/debt.dto';
 
 @Injectable({ providedIn: 'root' })
 export class DebtsApiDatasource {
@@ -25,13 +25,13 @@ export class DebtsApiDatasource {
     return this.http.patch<DebtDto>(`${this.baseUrl}/${id}`, changes);
   }
 
-  registerPayment(id: string, payment: DebtPaymentDto): Observable<DebtDto> {
+  registerPayment(id: string, payment: RegisterPaymentDto): Observable<DebtDto> {
     return this.http.post<DebtDto>(`${this.baseUrl}/${id}/payments`, payment);
   }
 
-  getPlan(extra: number): Observable<DebtPlanDto> {
+  getPlan(extra: number, strategy: string): Observable<DebtPlanDto> {
     return this.http.get<DebtPlanDto>(`${this.baseUrl}/plan`, {
-      params: new HttpParams().set('extra', String(extra)),
+      params: new HttpParams().set('extra', String(extra)).set('strategy', strategy),
     });
   }
 }
