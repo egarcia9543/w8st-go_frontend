@@ -31,6 +31,8 @@ import { CategoriesRepository } from './domain/repositories/categories/categorie
 import { CategoriesRepositoryImp } from './infrastructure/repositories/categories/categories.repository.imp';
 import { BudgetRepository } from './domain/repositories/budget/budget.repository';
 import { BudgetRepositoryImp } from './infrastructure/repositories/budget/budget.repository.imp';
+import { DebtsRepository } from './domain/repositories/debts/debts.repository';
+import { DebtsRepositoryImp } from './infrastructure/repositories/debts/debts.repository.imp';
 import { registerLocaleData } from '@angular/common';
 import localeEsCo from '@angular/common/locales/es-CO';
 registerLocaleData(localeEsCo);
@@ -59,5 +61,6 @@ export const appConfig: ApplicationConfig = {
     { provide: WishlistRepository, useClass: WishlistRepositoryImp },
     { provide: CategoriesRepository, useClass: CategoriesRepositoryImp },
     { provide: BudgetRepository, useClass: BudgetRepositoryImp },
+    { provide: DebtsRepository, useClass: DebtsRepositoryImp },
   ],
 };
