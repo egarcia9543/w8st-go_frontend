@@ -12,6 +12,7 @@ import {
   lucideSettings,
   lucideLogOut,
   lucideMail,
+  lucideLandmark,
 } from '@ng-icons/lucide';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthFacade } from '../../../facades/auth.facade';
@@ -42,6 +43,7 @@ interface MenuItem {
       lucideSettings,
       lucideLogOut,
       lucideMail,
+      lucideLandmark,
     }),
   ],
 })
@@ -74,6 +76,11 @@ export class SideMenu {
       title: 'Presupuesto',
       url: 'presupuesto',
       icon: 'lucidePiggyBank',
+    },
+    {
+      title: 'Deudas',
+      url: 'deudas',
+      icon: 'lucideLandmark',
     },
     {
       title: 'Tarjetas',

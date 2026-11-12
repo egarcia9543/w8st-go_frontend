@@ -40,6 +40,11 @@ export const routes: Routes = [
         canActivate: [authGuard],
       },
       {
+        path: 'deudas',
+        loadComponent: () => import('./presentation/pages/debts/debts').then((m) => m.Debts),
+        canActivate: [authGuard],
+      },
+      {
         path: 'tarjetas',
         loadComponent: () => import('./presentation/pages/cards/cards').then((m) => m.Cards),
         canActivate: [authGuard],
